@@ -125,6 +125,6 @@ export const cachedSnapshot = (key:string):Promise<any> => new Promise((resolve,
 });
 
 export const triggerDelete = (key:string) => {
-  braidClient.delete(key);
+  braidClient.data.delete(key);
 };
 
