@@ -28,7 +28,6 @@ setImmediate(async () => {
 });
 
 braidClient.data.on('set', (key:string, value:any) => {
-  console.log(key, braidClient.data.pairs.get(key));
   let cached;
   if (typeof value !== 'undefined') {
     cached = fromJS(value);
@@ -72,14 +71,13 @@ export const cachedSubscribe = (key: string, callback: (any) => void) => {
   let callbackSet = callbackMap.get(key);
   if (callbackSet) {
     callbackSet.add(callback);
-    callback(cache[key]);
   } else {
     callbackSet = new Set([callback]);
     callbackMap.set(key, callbackSet);
-    if (cache[key]) {
-      callback(cache[key]);
-    }
     braidClient.subscribe(key);
+  }
+  if (cache[key]) {
+    callback(cache[key]);
   }
 };
 
@@ -104,16 +102,23 @@ export const getReduxChannel = (key: string, defaultValue?: any) => eventChannel
       emit(defaultValue);
     }
   };
-  cachedSubscribe(key, handle);
+  setImmediate(() => {
+    cachedSubscribe(key, handle);
+  });
   return () => {
     cachedUnsubscribe(key, handle);
   };
 });
 
-export const cachedSnapshot = (key:string):Promise<any> => new Promise((resolve, reject) => {
+export const cachedSnapshot = (key:string, defaultValue?: any):Promise<any> => new Promise((resolve, reject) => {
   const timeout = setTimeout(() => {
-    reject(new Error(`Snapshot timeout for ${key}`));
-  }, 5000);
+    cachedUnsubscribe(key, handleValue);
+    if (typeof defaultValue !== 'undefined') {
+      resolve(defaultValue);
+    } else {
+      reject(new Error(`Snapshot timeout for ${key}`));
+    }
+  }, 2000);
   const handleValue = (value) => {
     if (typeof value !== 'undefined') {
       clearTimeout(timeout);
