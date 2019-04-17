@@ -932,10 +932,10 @@
     lodash "^4.17.11"
     to-fast-properties "^2.0.0"
 
-"@bunchtogether/braid-client@^1.0.16":
-  version "1.0.16"
-  resolved "https://registry.yarnpkg.com/@bunchtogether/braid-client/-/braid-client-1.0.16.tgz#21f1bd246fc75aef60b3745784f6fffc845a22da"
-  integrity sha512-KasvyvZDwbraGuqdsmSTXMCniUrU4htvpvetq1h8ZF7QmQ/sHKCIYzyRn0vi2qKMTt18CB4jeXiN3Sx2sqYdxA==
+"@bunchtogether/braid-client@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@bunchtogether/braid-client/-/braid-client-1.1.2.tgz#26f0661be2bdf5d9d63fb0dcb7cf4b0965736a98"
+  integrity sha512-xv2E3mpsRGk0LIBtrGD7ARQm4O/3kB207+KIERMgxeoiFcPZohPNiAltWZhK/IdlXMujvxx0l/cl115hjek4qA==
   dependencies:
     "@bunchtogether/braid-messagepack" "1.0.10"
     isomorphic-ws "^4.0.1"

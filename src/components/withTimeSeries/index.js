@@ -44,7 +44,7 @@ export default (parameters: Parameters = { delta: 60, end: Date.now(), machines:
       if (this.props.names !== nextProps.names || this.props.machines !== nextProps.machines || this.props.delta !== nextProps.delta || this.props.end !== nextProps.end) {
         const names = this.props.names;
         const machines = this.props.machines;
-        (async function () {
+        (async () => {
           const oldmachines = machines.subtract(nextProps.machines);
           const oldNames = names.subtract(nextProps.names);
           const newmachines = nextProps.machines.subtract(machines);
