@@ -44,28 +44,30 @@ export default (parameters: Parameters = { delta: 60, end: Date.now(), machines:
       if (this.props.names !== nextProps.names || this.props.machines !== nextProps.machines || this.props.delta !== nextProps.delta || this.props.end !== nextProps.end) {
         const names = this.props.names;
         const machines = this.props.machines;
-        const oldmachines = machines.subtract(nextProps.machines);
-        const oldNames = names.subtract(nextProps.names);
-        const newmachines = nextProps.machines.subtract(machines);
-        const newNames = nextProps.names.subtract(names);
-        let values = nextState.values;
-        for (const machine of oldmachines) {
-          for (const name of oldNames) {
-            this.unsubscribeToValueUpdates(machine, name);
+        (async function () {
+          const oldmachines = machines.subtract(nextProps.machines);
+          const oldNames = names.subtract(nextProps.names);
+          const newmachines = nextProps.machines.subtract(machines);
+          const newNames = nextProps.names.subtract(names);
+          let values = nextState.values;
+          for (const machine of oldmachines) {
+            for (const name of oldNames) {
+              this.unsubscribeToValueUpdates(machine, name);
+            }
+            values = values.delete(machine);
           }
-          values = values.delete(machine);
-        }
-        for (const machine of newmachines) {
-          values = values.set(machine, ImmutableMap());
-          for (const name of newNames) {
-            values = values.setIn([machine, name], List());
-            this.fetchInitialValues(machine, name, nextProps.delta, nextProps.end);
-            this.subscribeToValueUpdates(machine, name);
+          for (const machine of newmachines) {
+            values = values.set(machine, ImmutableMap());
+            for (const name of newNames) {
+              values = values.setIn([machine, name], List());
+              await this.fetchInitialValues(machine, name, nextProps.delta, nextProps.end);
+              this.subscribeToValueUpdates(machine, name);
+            }
           }
-        }
-        if (this.mounted) {
-          this.setState({ values });
-        }
+          if (this.mounted) {
+            this.setState({ values });
+          }
+        })();
       }
       return this.state.values !== nextState.values;
     }
@@ -82,7 +84,7 @@ export default (parameters: Parameters = { delta: 60, end: Date.now(), machines:
 
     async setupInitialState(machines: Array<string>, names: Array<string>, delta: number, end?: number = Date.now()) {
       let machinesValues = this.state.values;
-      const initialValues = this.fetchInitialValues(machines, names, delta, end);
+      const initialValues = await this.fetchInitialValues(machines, names, delta, end);
       const initialData = ImmutableMap(initialValues);
       for (const [machineName, machineData] of initialData.entries()) {
         for (const [name, nameValues] of Object.entries(machineData)) {
