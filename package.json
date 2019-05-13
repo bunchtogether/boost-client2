@@ -60,7 +60,7 @@
     "react": "^16.8.6"
   },
   "dependencies": {
-    "@bunchtogether/braid-client": "^1.1.3",
+    "@bunchtogether/braid-client": "^1.1.10",
     "@callstack/async-storage": "^1.1.0",
     "hoist-non-react-statics": "^3.3.0",
     "immutable": "^4.0.0-rc.12",
