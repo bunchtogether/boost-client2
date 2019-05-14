@@ -10,7 +10,7 @@ const cache = {};
 
 export const braidClient = new Client();
 
-setImmediate(async () => {
+(async () => {
   const keys = await AsyncStorage.getAllKeys();
   const pairs = await AsyncStorage.multiGet(keys);
   const insertions = [];
@@ -25,7 +25,7 @@ setImmediate(async () => {
     insertions.push([key, JSON.parse(value)]);
   }
   braidClient.data.process([insertions, []]);
-});
+})();
 
 braidClient.data.on('set', (key:string, value:any) => {
   let cached;
