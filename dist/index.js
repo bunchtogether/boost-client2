@@ -76,9 +76,7 @@ export const cachedSubscribe = (key        , callback               ) => {
     callbackMap.set(key, callbackSet);
     braidClient.subscribe(key);
   }
-  if (cache[key]) {
-    callback(cache[key]);
-  }
+  callback(cache[key]);
 };
 
 export const cachedUnsubscribe = (key       , callback              ) => {
