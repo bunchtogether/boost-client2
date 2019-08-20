@@ -6,7 +6,8 @@ import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
 type Parameters = {
-  propertyName?: string
+  propertyName?: string,
+  idName?: string,
 };
 
 type State = {
@@ -16,10 +17,11 @@ type State = {
 
 export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: ImmutableMap<string, *> }>> {
   const getName = (props: Props) => {
-    if (!props.id) {
+    const id = parameters.idName ? props[parameters.idName] : props.id;
+    if (!id) {
       return undefined;
     }
-    return `n/${props.id}`;
+    return `n/${id}`;
   };
 
   class NewComponent extends React.Component<Props, State> {

@@ -31,7 +31,8 @@ type Parameters = {
   types?: string,
   query?: string,
   includeInactive?: boolean,
-  propertyName?: string
+  propertyName?: string,
+  idName?: string,
 };
 
 type State = {
@@ -41,14 +42,15 @@ type State = {
 
 export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: List<ImmutableMap<string, *>> }>> {
   const getName = (props: Props) => {
-    if (!props.id) {
+    const id = parameters.idName ? props[parameters.idName] : props.id;
+    if (!id) {
       return undefined;
     }
     const options = getParameters(parameters, props);
     if (isEmpty(options)) {
-      return `n/${props.id}/tree`;
+      return `n/${id}/tree`;
     }
-    return `n/${props.id}/tree?${queryString.stringify(options)}`;
+    return `n/${id}/tree?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component<Props, State> {

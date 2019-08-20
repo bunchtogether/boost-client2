@@ -35,7 +35,8 @@ const getParameters = (...args              )            => pick(Object.assign({
                      
                                 
                             
-                       
+                        
+                  
   
 
               
@@ -45,7 +46,8 @@ const getParameters = (...args              )            => pick(Object.assign({
 
 export default (parameters             = {}) => function wrap               (Component                                )                                                                    {
   const getName = (props       ) => {
-    if (!props.id) {
+    const id = parameters.idName ? props[parameters.idName] : props.id;
+    if (!id) {
       return undefined;
     }
     const options = getParameters(parameters, props);
@@ -53,9 +55,9 @@ export default (parameters             = {}) => function wrap               (Com
       options.type = options.type.split(',');
     }
     if (isEmpty(options)) {
-      return `n/${props.id}/descendents`;
+      return `n/${id}/descendents`;
     }
-    return `n/${props.id}/descendents?${queryString.stringify(options)}`;
+    return `n/${id}/descendents?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component               {

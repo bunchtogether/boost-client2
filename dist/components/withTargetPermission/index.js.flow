@@ -33,6 +33,7 @@ type Parameters = {
   hasParent?: string,
   propertyName?: string,
   permission?: string,
+  idName?: string,
 };
 
 type State = {
@@ -42,15 +43,16 @@ type State = {
 
 export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: List<string> }>> {
   const getName = (props: Props) => {
+    const id = parameters.idName ? props[parameters.idName] : props.id;
     const permission = props.permission || parameters.permission;
-    if (!props.id || !permission) {
+    if (!id || !permission) {
       return undefined;
     }
     const options = getParameters(parameters, props);
     if (isEmpty(options)) {
-      return `p/${permission}/${props.id}`;
+      return `p/${permission}/${id}`;
     }
-    return `p/${permission}/${props.id}?${queryString.stringify(options)}`;
+    return `p/${permission}/${id}?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component<Props, State> {

@@ -36,7 +36,8 @@ type Parameters = {
   type?: string | Array<string>,
   query?: string,
   includeInactive?: boolean,
-  propertyName?: string
+  propertyName?: string,
+  idName?: string,
 };
 
 type State = {
@@ -46,7 +47,8 @@ type State = {
 
 export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: List<string> }>> {
   const getName = (props: Props) => {
-    if (!props.id) {
+    const id = parameters.idName ? props[parameters.idName] : props.id;
+    if (!id) {
       return undefined;
     }
     const options = getParameters(parameters, props);
@@ -54,9 +56,9 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
       options.type = options.type.split(',');
     }
     if (isEmpty(options)) {
-      return `n/${props.id}/ancestors`;
+      return `n/${id}/ancestors`;
     }
-    return `n/${props.id}/ancestors?${queryString.stringify(options)}`;
+    return `n/${id}/ancestors?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component<Props, State> {

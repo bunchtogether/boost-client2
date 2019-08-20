@@ -6,6 +6,8 @@ import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
                    
+                        
+                  
                        
   
 
@@ -16,10 +18,12 @@ import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
 export default (parameters             = {}) => function wrap               (Component                                )                                                                               {
   const getName = (props       ) => {
-    if (!props.id || !props.childId) {
+    const id = parameters.idName ? props[parameters.idName] : props.id;
+    const childId = parameters.childIdName ? props[parameters.childIdName] : props.childId;
+    if (!id || !childId) {
       return undefined;
     }
-    return `e/${props.id}/${props.childId}`;
+    return `e/${id}/${childId}`;
   };
 
   class NewComponent extends React.Component               {

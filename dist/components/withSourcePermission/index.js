@@ -37,6 +37,8 @@ const getParameters = (...args              )            => pick(Object.assign({
                               
                         
                       
+                  
+                   
   
 
               
@@ -46,17 +48,19 @@ const getParameters = (...args              )            => pick(Object.assign({
 
 export default (parameters             = {}) => function wrap               (Component                                )                                                                    {
   const getName = (props       ) => {
+    const id = parameters.idName ? props[parameters.idName] : props.id;
+    const ids = parameters.idsName ? props[parameters.idsName] : props.ids;
     const permission = props.permission || parameters.permission;
     if ((!props.id && !props.ids) || !permission) {
       return undefined;
     }
     const options = getParameters(parameters, props);
     const parts = ['p'];
-    if (props.id) {
-      parts.push(props.id);
+    if (id) {
+      parts.push(id);
     } else {
-      for (const id of props.ids) {
-        parts.push(id);
+      for (const idString of ids) {
+        parts.push(idString);
       }
     }
     parts.push(permission);
