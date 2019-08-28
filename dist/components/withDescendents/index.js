@@ -17,6 +17,7 @@ const parameterNames = new Set([
   'hasChild',
   'hasParent',
   'type',
+  'typesInTree',
   'query',
   'includeInactive',
 ]);
@@ -34,6 +35,8 @@ const getParameters = (...args              )            => pick(Object.assign({
                     
                      
                                 
+                 
+                              
                             
                         
                   

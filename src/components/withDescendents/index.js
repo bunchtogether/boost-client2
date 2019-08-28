@@ -17,6 +17,7 @@ const parameterNames = new Set([
   'hasChild',
   'hasParent',
   'type',
+  'typesInTree',
   'query',
   'includeInactive',
 ]);
@@ -34,6 +35,8 @@ type Parameters = {
   hasChild?: string,
   hasParent?: string,
   type?: string | Array<string>,
+  query?: string,
+  typesInTree?: Array<string>,
   includeInactive?: boolean,
   propertyName?: string,
   idName?: string,
