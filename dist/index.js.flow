@@ -38,7 +38,6 @@ braidClient.data.on('set', (key:string, value:any) => {
   });
   const callbackSet = callbackMap.get(key);
   if (!callbackSet) {
-    braidClient.unsubscribe(key);
     return;
   }
   for (const callback of callbackSet) { // eslint-disable-line no-restricted-syntax
@@ -48,12 +47,11 @@ braidClient.data.on('set', (key:string, value:any) => {
 
 braidClient.data.on('delete', (key:string) => {
   delete cache[key];
-  const callbackSet = callbackMap.get(key);
   setImmediate(() => {
     AsyncStorage.removeItem(`@b${key}`);
   });
+  const callbackSet = callbackMap.get(key);
   if (!callbackSet) {
-    braidClient.unsubscribe(key);
     return;
   }
   for (const callback of callbackSet) {
