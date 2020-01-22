@@ -9,6 +9,7 @@ import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 const parameterNames = new Set([
   'limit',
   'offset',
+  'filterNamed',
 ]);
 
 const getParameters = (...args              )            => pick(Object.assign({}, ...args), [...parameterNames]);
