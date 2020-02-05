@@ -10,6 +10,7 @@ const parameterNames = new Set([
   'limit',
   'offset',
   'filterNamed',
+  'query',
 ]);
 
 const getParameters = (...args              )            => pick(Object.assign({}, ...args), [...parameterNames]);
@@ -17,6 +18,8 @@ const getParameters = (...args              )            => pick(Object.assign({
                    
                  
                   
+                        
+                 
                         
                   
   
