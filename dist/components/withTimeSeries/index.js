@@ -24,6 +24,11 @@ import { agent } from '../../api-agent';
                                                           
   
 
+function isLessThan5hrs(ms        ) {
+  const hours = (ms / 1000) / 60 / 60;
+  return hours < 5;
+}
+
 export default (parameters             = { delta: 60, end: Date.now(), machines: [], names: [] }) => function wrap               (Component                                )                                                                                                        {   // eslint-disable-line
   class NewComponent extends React.Component               {
     constructor(props       ) {
@@ -43,25 +48,24 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
     shouldComponentUpdate(nextProps       , nextState       ) {
       if (this.props.names !== nextProps.names || this.props.machines !== nextProps.machines || this.props.delta !== nextProps.delta || this.props.end !== nextProps.end) {
         const names = this.props.names;
-        const machines = this.props.machines;
         (async () => {
-          const oldmachines = machines.subtract(nextProps.machines);
-          const oldNames = names.subtract(nextProps.names);
-          const newmachines = nextProps.machines.subtract(machines);
-          const newNames = nextProps.names.subtract(names);
           let values = nextState.values;
-          for (const machine of oldmachines) {
-            for (const name of oldNames) {
+          for (const machine of this.props.machines) {
+            for (const name of names) {
               this.unsubscribeToValueUpdates(machine, name);
             }
             values = values.delete(machine);
           }
-          for (const machine of newmachines) {
+          for (const machine of nextProps.machines) {
             values = values.set(machine, ImmutableMap());
-            for (const name of newNames) {
-              values = values.setIn([machine, name], List());
-              await this.fetchInitialValues(machine, name, nextProps.delta, nextProps.end);
-              this.subscribeToValueUpdates(machine, name);
+            for (const name of names) {
+              const newData = await this.fetchInitialValues([machine], [name], nextProps.delta, nextProps.end);
+              for (const valueName of Object.keys(newData[machine])) {
+                values = values.setIn([machine, valueName], List(newData[machine][valueName]));
+                if (isLessThan5hrs(nextProps.delta)) {
+                  this.subscribeToValueUpdates(machine, valueName);
+                }
+              }
             }
           }
           if (this.mounted) {
@@ -89,7 +93,9 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
       for (const [machineName, machineData] of initialData.entries()) {
         for (const [name, nameValues] of Object.entries(machineData)) {
           machinesValues = machinesValues.setIn([machineName, name], List(nameValues));
-          this.subscribeToValueUpdates(machineName, name);
+          if (isLessThan5hrs(delta)) {
+            this.subscribeToValueUpdates(machineName, name);
+          }
         }
       }
       if (this.mounted) {
@@ -103,7 +109,6 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
                      
 
     async fetchInitialValues(machines               , names               , delta        , end          = Date.now()) {   // eslint-disable-line
-      // fetch
       try {
         const timeseriesData = await agent.get(`/timeseries/${delta}/${end}`)
           .query({
@@ -119,11 +124,9 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
 
     subscribeToValueUpdates(machine        , name        ) {
       const eventHandlerName = `timeseries/${machine}/${name}`;
-      // console.log('SUBSCRIBING TO', eventHandlerName);
       const handler = (data           ) => {
         const list = this.state.values.getIn([machine, name]);
         if (list && data.value && this.mounted) {
-          // console.log(`SUBSCRIPTION TRIGGERED ${machine}/${name}`, data);
           const newValue = list.shift().push([data.timestamp, data.value]);
           this.setState({ values: this.state.values.setIn([machine, name], newValue) });
         }
@@ -134,7 +137,6 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
 
     unsubscribeToValueUpdates(machine        , name        ) {
       const eventHandlerName = `timeseries/${machine}/${name}`;
-      // console.log('UNSUBSCRIBING TO', eventHandlerName);
       const handler = this.eventHandlerFunctions[eventHandlerName];
       braidClient.removeServerEventListener(eventHandlerName, handler);
     }
