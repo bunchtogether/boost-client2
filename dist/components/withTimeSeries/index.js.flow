@@ -24,9 +24,9 @@ type State = {
   values: ImmutableMap<string, ImmutableMap<string, List>>
 };
 
-function isLessThan5hrs(ms: number) {
-  const hours = (ms / 1000) / 60 / 60;
-  return hours < 5;
+function isLive(ms: number) {
+  const mins = (ms / 1000) / 60;
+  return mins < 10;
 }
 
 export default (parameters: Parameters = { delta: 60, end: Date.now(), machines: [], names: [] }) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: ImmutableMap<string, ImmutableMap<string, List>> }>> {   // eslint-disable-line
@@ -62,7 +62,7 @@ export default (parameters: Parameters = { delta: 60, end: Date.now(), machines:
               const newData = await this.fetchInitialValues([machine], [name], nextProps.delta, nextProps.end);
               for (const valueName of Object.keys(newData[machine])) {
                 values = values.setIn([machine, valueName], List(newData[machine][valueName]));
-                if (isLessThan5hrs(nextProps.delta)) {
+                if (isLive(nextProps.delta)) {
                   this.subscribeToValueUpdates(machine, valueName);
                 }
               }
@@ -93,7 +93,7 @@ export default (parameters: Parameters = { delta: 60, end: Date.now(), machines:
       for (const [machineName, machineData] of initialData.entries()) {
         for (const [name, nameValues] of Object.entries(machineData)) {
           machinesValues = machinesValues.setIn([machineName, name], List(nameValues));
-          if (isLessThan5hrs(delta)) {
+          if (isLive(delta)) {
             this.subscribeToValueUpdates(machineName, name);
           }
         }
