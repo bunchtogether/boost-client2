@@ -34,6 +34,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
     constructor(props       ) {
       super(props);
       this.eventHandlerFunctions = {};
+      this.subscriptions = new Set();
       this.state = {
         values: ImmutableMap(),
       };
@@ -56,6 +57,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
             }
             values = values.delete(machine);
           }
+          this.unsubscribeToAllUpdates();
           for (const machine of nextProps.machines) {
             values = values.set(machine, ImmutableMap());
             for (const name of names) {
@@ -64,6 +66,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
                 for (const valueName of Object.keys(newData[machine])) {
                   values = values.setIn([machine, valueName], List(newData[machine][valueName]));
                   if (isLive(nextProps.delta)) {
+                    this.subscriptions.add(`timeseries/${machine}/${valueName}`);
                     this.subscribeToValueUpdates(machine, valueName);
                   }
                 }
@@ -85,6 +88,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
           this.unsubscribeToValueUpdates(machine, name);
         }
       }
+      this.unsubscribeToAllUpdates();
     }
 
 
@@ -109,6 +113,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
 
                                   
                      
+                               
 
     async fetchInitialValues(machines               , names               , delta        , end          = Date.now()) {   // eslint-disable-line
       try {
@@ -141,6 +146,14 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
       const eventHandlerName = `timeseries/${machine}/${name}`;
       const handler = this.eventHandlerFunctions[eventHandlerName];
       braidClient.removeServerEventListener(eventHandlerName, handler);
+    }
+
+    unsubscribeToAllUpdates() {
+      for (const eventHandlerName of this.subscriptions) {
+        const handler = this.eventHandlerFunctions[eventHandlerName];
+        braidClient.removeServerEventListener(eventHandlerName, handler);
+        this.subscriptions.delete(eventHandlerName);
+      }
     }
 
     render() {
