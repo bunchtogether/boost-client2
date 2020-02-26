@@ -60,10 +60,12 @@ export default (parameters: Parameters = { delta: 60, end: Date.now(), machines:
             values = values.set(machine, ImmutableMap());
             for (const name of names) {
               const newData = await this.fetchInitialValues([machine], [name], nextProps.delta, nextProps.end);
-              for (const valueName of Object.keys(newData[machine])) {
-                values = values.setIn([machine, valueName], List(newData[machine][valueName]));
-                if (isLive(nextProps.delta)) {
-                  this.subscribeToValueUpdates(machine, valueName);
+              if (newData[machine]) {
+                for (const valueName of Object.keys(newData[machine])) {
+                  values = values.setIn([machine, valueName], List(newData[machine][valueName]));
+                  if (isLive(nextProps.delta)) {
+                    this.subscribeToValueUpdates(machine, valueName);
+                  }
                 }
               }
             }
