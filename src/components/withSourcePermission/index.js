@@ -19,6 +19,7 @@ const parameterNames = new Set([
   'hasChild',
   'hasParent',
   'parentEdgeContains',
+  'typesInTree',
 ]);
 
 const getParameters = (...args:Array<Object>):Parameters => pick(Object.assign({}, ...args), [...parameterNames]);
@@ -31,6 +32,7 @@ type Parameters = {
   filter?:string,
   type?:string,
   query?:string,
+  typesInTree?: Array<string>,
   readPermission?:boolean,
   hasChild?: string,
   hasParent?: string,
