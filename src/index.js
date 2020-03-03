@@ -8,6 +8,13 @@ import AsyncStorage from '@callstack/async-storage';
 const callbackMap:Map<string, Set<(any) => void>> = new Map();
 const cache = {};
 
+export class BoostCatastrophicError extends Error {
+  constructor(message:string) {
+    super(message);
+    this.name = 'BoostCatastrophicError';
+  }
+}
+
 export const braidClient = new Client();
 
 (async () => {
@@ -65,6 +72,36 @@ export const cachedValue = (key?: string) => { // eslint-disable-line consistent
   }
 };
 
+const subscribeWithErrorHandler = async (key) => {
+  for (let i = 1; i < 100; i += 1) {
+    try {
+      await braidClient.subscribe(key);
+      return;
+    } catch (error) {
+      if (error.name === 'SubscribeError') {
+        if (error.code === 403) {
+          console.log(`User is not authorized to subscribe to ${key}`);
+          return;
+        }
+        console.error(`Server error when subscribing to ${key} on attempt ${i}`);
+      } else {
+        console.log(`Error subscribing to ${key}: ${error.message}`);
+        braidClient.emit('error', error);
+        return;
+      }
+    }
+    if (i < 6) {
+      await new Promise((resolve) => setTimeout(resolve, i * i * 1000));
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 30000));
+    }
+    if (!callbackMap.has(key)) {
+      return;
+    }
+  }
+  braidClient.emit('error', new BoostCatastrophicError(`Unable to request key ${key}`));
+};
+
 export const cachedSubscribe = (key: string, callback: (any) => void) => {
   let callbackSet = callbackMap.get(key);
   if (callbackSet) {
@@ -72,7 +109,7 @@ export const cachedSubscribe = (key: string, callback: (any) => void) => {
   } else {
     callbackSet = new Set([callback]);
     callbackMap.set(key, callbackSet);
-    braidClient.subscribe(key);
+    subscribeWithErrorHandler(key);
   }
   callback(cache[key]);
 };
