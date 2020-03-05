@@ -19,6 +19,7 @@ const parameterNames = new Set([
   'hasChild',
   'hasParent',
   'parentEdgeContains',
+  'typesInTree',
 ]);
 
 const getParameters = (...args              )            => pick(Object.assign({}, ...args), [...parameterNames]);
@@ -31,6 +32,7 @@ const getParameters = (...args              )            => pick(Object.assign({
                  
                
                 
+                              
                           
                     
                      
