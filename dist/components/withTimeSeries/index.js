@@ -43,7 +43,6 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
 
     componentDidMount() {
       this.mounted = true;
-      this.setupInitialState(this.props.machines, this.props.names, this.props.delta);
     }
 
     shouldComponentUpdate(nextProps       , nextState       ) {
@@ -61,7 +60,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
           for (const machine of nextProps.machines) {
             values = values.set(machine, ImmutableMap());
             for (const name of names) {
-              const newData = await this.fetchInitialValues([machine], [name], nextProps.delta, nextProps.end);
+              const newData = await this.fetchValues([machine], [name], nextProps.delta, nextProps.end);
               if (newData[machine]) {
                 for (const valueName of Object.keys(newData[machine])) {
                   values = values.setIn([machine, valueName], List(newData[machine][valueName]));
@@ -91,31 +90,11 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
       this.unsubscribeToAllUpdates();
     }
 
-
-    async setupInitialState(machines               , names               , delta        , end          = Date.now()) {
-      let machinesValues = this.state.values;
-      const initialValues = await this.fetchInitialValues(machines, names, delta, end);
-      const initialData = ImmutableMap(initialValues);
-      for (const [machineName, machineData] of initialData.entries()) {
-        for (const [name, nameValues] of Object.entries(machineData)) {
-          machinesValues = machinesValues.setIn([machineName, name], List(nameValues));
-          if (isLive(delta)) {
-            this.subscribeToValueUpdates(machineName, name);
-          }
-        }
-      }
-      if (this.mounted) {
-        this.setState({
-          values: machinesValues,
-        });
-      }
-    }
-
                                   
                      
                                
 
-    async fetchInitialValues(machines               , names               , delta        , end          = Date.now()) {   // eslint-disable-line
+    async fetchValues(machines               , names               , delta        , end          = Date.now()) {   // eslint-disable-line
       try {
         const timeseriesData = await agent.get(`/timeseries/${delta}/${end}`)
           .query({
