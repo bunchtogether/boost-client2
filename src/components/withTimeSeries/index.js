@@ -1,7 +1,7 @@
 // @flow
 
 import * as React from 'react';
-import { Map as ImmutableMap, List } from 'immutable';
+import { Map as ImmutableMap, List, is } from 'immutable';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { braidClient } from '../..';
 import { agent } from '../../api-agent';
@@ -47,7 +47,7 @@ export default (parameters: Parameters = { delta: 60, end: Date.now(), machines:
     }
 
     shouldComponentUpdate(nextProps: Props, nextState: State) {
-      if (this.props.names !== nextProps.names || this.props.machines !== nextProps.machines || this.props.delta !== nextProps.delta || this.props.end !== nextProps.end) {
+      if (!is(this.props.machines, nextProps.machines) || !is(this.props.names, nextProps.names) || this.props.delta !== nextProps.delta || this.props.end !== nextProps.end) {
         const names = this.props.names;
         (async () => {
           let values = nextState.values;
@@ -94,13 +94,17 @@ export default (parameters: Parameters = { delta: 60, end: Date.now(), machines:
 
     async setupInitialState(machines: Array<string>, names: Array<string>, delta: number, end?: number = Date.now()) {
       let machinesValues = this.state.values;
-      const initialValues = await this.fetchValues(machines, names, delta, end);
-      const initialData = ImmutableMap(initialValues);
-      for (const [machineName, machineData] of initialData.entries()) {
-        for (const [name, nameValues] of Object.entries(machineData)) {
-          machinesValues = machinesValues.setIn([machineName, name], List(nameValues));
-          if (isLive(delta)) {
-            this.subscribeToValueUpdates(machineName, name);
+      for (const machine of machines) {
+        for (const singleName of names) {
+          const initialValues = await this.fetchValues([machine], [singleName], delta, end);
+          const initialData = ImmutableMap(initialValues);
+          for (const [machineName, machineData] of initialData.entries()) {
+            for (const [name, nameValues] of Object.entries(machineData)) {
+              machinesValues = machinesValues.setIn([machineName, name], List(nameValues));
+              if (isLive(delta)) {
+                this.subscribeToValueUpdates(machineName, name);
+              }
+            }
           }
         }
       }
