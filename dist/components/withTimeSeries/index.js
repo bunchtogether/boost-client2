@@ -43,6 +43,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
 
     componentDidMount() {
       this.mounted = true;
+      this.setupInitialState(this.props.machines, this.props.names, this.props.delta);
     }
 
     shouldComponentUpdate(nextProps       , nextState       ) {
@@ -88,6 +89,26 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
         }
       }
       this.unsubscribeToAllUpdates();
+    }
+
+
+    async setupInitialState(machines               , names               , delta        , end          = Date.now()) {
+      let machinesValues = this.state.values;
+      const initialValues = await this.fetchValues(machines, names, delta, end);
+      const initialData = ImmutableMap(initialValues);
+      for (const [machineName, machineData] of initialData.entries()) {
+        for (const [name, nameValues] of Object.entries(machineData)) {
+          machinesValues = machinesValues.setIn([machineName, name], List(nameValues));
+          if (isLive(delta)) {
+            this.subscribeToValueUpdates(machineName, name);
+          }
+        }
+      }
+      if (this.mounted) {
+        this.setState({
+          values: machinesValues,
+        });
+      }
     }
 
                                   
