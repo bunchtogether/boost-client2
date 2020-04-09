@@ -17,6 +17,40 @@ export class BoostCatastrophicError extends Error {
 
 export const braidClient = new Client();
 
+let cacheMap = new Map();
+let flushPromise = null;
+const flush = () => {
+  if (flushPromise) {
+    return flushPromise;
+  }
+  flushPromise = _flush();
+  flushPromise.then(() => {
+    flushPromise = null;
+  });
+  flushPromise.catch((error) => {
+    console.error(error);
+    flushPromise = null;
+  });
+  return flushPromise;
+};
+
+const _flush = async () => { // eslint-disable-line no-underscore-dangle
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  const oldCacheMap = cacheMap;
+  cacheMap = new Map();
+  const setQueue = [];
+  const removeQueue = [];
+  for (const [key, value] of oldCacheMap) {
+    if (typeof value === 'undefined') {
+      removeQueue.push(key);
+    } else {
+      setQueue.push([key, value]);
+    }
+  }
+  await AsyncStorage.multiRemove(removeQueue);
+  await AsyncStorage.multiSet(setQueue);
+};
+
 (async () => {
   const keys = await AsyncStorage.getAllKeys();
   const pairs = await AsyncStorage.multiGet(keys);
@@ -32,6 +66,15 @@ export const braidClient = new Client();
     insertions.push([key, JSON.parse(value)]);
   }
   braidClient.data.process([insertions, []]);
+  await new Promise((resolve) => setImmediate(resolve));
+  braidClient.data.on('set', (key:string) => {
+    cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
+    flush();
+  });
+  braidClient.data.on('delete', (key:string) => {
+    cacheMap.set(`@b${key}`, undefined);
+    flush();
+  });
 })();
 
 braidClient.data.on('set', (key:string, value:any) => {
@@ -40,9 +83,6 @@ braidClient.data.on('set', (key:string, value:any) => {
     cached = fromJS(value);
   }
   cache[key] = cached;
-  setImmediate(() => {
-    AsyncStorage.setItem(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
-  });
   const callbackSet = callbackMap.get(key);
   if (!callbackSet) {
     return;
@@ -54,9 +94,6 @@ braidClient.data.on('set', (key:string, value:any) => {
 
 braidClient.data.on('delete', (key:string) => {
   delete cache[key];
-  setImmediate(() => {
-    AsyncStorage.removeItem(`@b${key}`);
-  });
   const callbackSet = callbackMap.get(key);
   if (!callbackSet) {
     return;
