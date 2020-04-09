@@ -962,10 +962,10 @@
   dependencies:
     farmhash "^2.1.0"
 
-"@callstack/async-storage@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@callstack/async-storage/-/async-storage-1.1.0.tgz#f7d66c7b330bf5eba65dfb3c236f62cbf4aa42b0"
-  integrity sha1-99ZsezML9eumXfs8I29iy/SqQrA=
+"@callstack/async-storage@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@callstack/async-storage/-/async-storage-2.0.3.tgz#93fc98f768926024fe01d759acaba6c80feb5727"
+  integrity sha512-JK/cV/nRHdYDdBmT0GZ7otywZXFNpWMuzjkGgeyhd/Pc+alpaSspg73U6lxFBM5ndnY+T1iQ3RSfUZl3QG+nwQ==
   dependencies:
     lodash.merge "^4.6.0"
 

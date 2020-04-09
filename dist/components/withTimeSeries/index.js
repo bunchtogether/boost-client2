@@ -1,7 +1,7 @@
 //      
 
 import * as React from 'react';
-import { Map as ImmutableMap, List } from 'immutable';
+import { Map as ImmutableMap, List, is } from 'immutable';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { braidClient } from '../..';
 import { agent } from '../../api-agent';
@@ -47,7 +47,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
     }
 
     shouldComponentUpdate(nextProps       , nextState       ) {
-      if (this.props.names !== nextProps.names || this.props.machines !== nextProps.machines || this.props.delta !== nextProps.delta || this.props.end !== nextProps.end) {
+      if (!is(this.props.machines, nextProps.machines) || !is(this.props.names, nextProps.names) || this.props.delta !== nextProps.delta || this.props.end !== nextProps.end) {
         const names = this.props.names;
         (async () => {
           let values = nextState.values;
@@ -61,7 +61,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
           for (const machine of nextProps.machines) {
             values = values.set(machine, ImmutableMap());
             for (const name of names) {
-              const newData = await this.fetchInitialValues([machine], [name], nextProps.delta, nextProps.end);
+              const newData = await this.fetchValues([machine], [name], nextProps.delta, nextProps.end);
               if (newData[machine]) {
                 for (const valueName of Object.keys(newData[machine])) {
                   values = values.setIn([machine, valueName], List(newData[machine][valueName]));
@@ -94,13 +94,17 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
 
     async setupInitialState(machines               , names               , delta        , end          = Date.now()) {
       let machinesValues = this.state.values;
-      const initialValues = await this.fetchInitialValues(machines, names, delta, end);
-      const initialData = ImmutableMap(initialValues);
-      for (const [machineName, machineData] of initialData.entries()) {
-        for (const [name, nameValues] of Object.entries(machineData)) {
-          machinesValues = machinesValues.setIn([machineName, name], List(nameValues));
-          if (isLive(delta)) {
-            this.subscribeToValueUpdates(machineName, name);
+      for (const machine of machines) {
+        for (const singleName of names) {
+          const initialValues = await this.fetchValues([machine], [singleName], delta, end);
+          const initialData = ImmutableMap(initialValues);
+          for (const [machineName, machineData] of initialData.entries()) {
+            for (const [name, nameValues] of Object.entries(machineData)) {
+              machinesValues = machinesValues.setIn([machineName, name], List(nameValues));
+              if (isLive(delta)) {
+                this.subscribeToValueUpdates(machineName, name);
+              }
+            }
           }
         }
       }
@@ -115,7 +119,7 @@ export default (parameters             = { delta: 60, end: Date.now(), machines:
                      
                                
 
-    async fetchInitialValues(machines               , names               , delta        , end          = Date.now()) {   // eslint-disable-line
+    async fetchValues(machines               , names               , delta        , end          = Date.now()) {   // eslint-disable-line
       try {
         const timeseriesData = await agent.get(`/timeseries/${delta}/${end}`)
           .query({
