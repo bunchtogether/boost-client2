@@ -51,7 +51,7 @@ const _flush = async () => { // eslint-disable-line no-underscore-dangle
   await AsyncStorage.multiSet(setQueue);
 };
 
-(async () => {
+const loadAsync = async () => {
   const keys = await AsyncStorage.getAllKeys();
   const pairs = await AsyncStorage.multiGet(keys);
   const insertions = [];
@@ -75,7 +75,41 @@ const _flush = async () => { // eslint-disable-line no-underscore-dangle
     cacheMap.set(`@b${key}`, undefined);
     flush();
   });
-})();
+};
+
+const loadSync = () => {
+  const insertions = [];
+  for (const keyString of Object.keys(localStorage)) {
+    if (keyString.slice(0, 2) !== '@b') {
+      continue;
+    }
+    const key = keyString.slice(2);
+    if (cache[key]) {
+      continue;
+    }
+    try {
+      const valueString = localStorage.getItem(keyString);
+      if (!valueString) {
+        continue;
+      }
+      insertions.push([key, JSON.parse(valueString)]);
+    } catch (error) {
+      console.log(`Unable to parse localStorage value for ${key}`);
+      console.error(error);
+    }
+  }
+  braidClient.data.process([insertions, []]);
+  setImmediate(() => {
+    braidClient.data.on('set', (key) => {
+      cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
+      flush();
+    });
+    braidClient.data.on('delete', (key) => {
+      cacheMap.set(`@b${key}`, undefined);
+      flush();
+    });
+  });
+};
 
 braidClient.data.on('set', (key       , value    ) => {
   let cached;
@@ -102,6 +136,12 @@ braidClient.data.on('delete', (key       ) => {
     callback();
   }
 });
+
+if (window && window.localStorage) {
+  loadSync();
+} else {
+  loadAsync();
+}
 
 export const cachedValue = (key         ) => { // eslint-disable-line consistent-return
   if (key) {
