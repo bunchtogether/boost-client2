@@ -228,7 +228,7 @@ export const cachedSnapshot = (key:string, defaultValue?: any):Promise<any> => n
     } else {
       reject(new Error(`Snapshot timeout for ${key}`));
     }
-  }, 2000);
+  }, 5000);
   const handleValue = (value) => {
     if (typeof value !== 'undefined') {
       clearTimeout(timeout);
@@ -238,6 +238,36 @@ export const cachedSnapshot = (key:string, defaultValue?: any):Promise<any> => n
   };
   cachedSubscribe(key, handleValue);
 });
+
+export const snapshot = (key:string, defaultValue?: any):Promise<any> => {
+  let callbackSet = callbackMap.get(key);
+  if (callbackSet) {
+    return cachedSnapshot(key, defaultValue);
+  }
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      braidClient.removeListener('error', handleError);
+      cachedUnsubscribe(key, callback);
+      reject(new Error(`Snapshot timeout for ${key}`));
+    }, 5000);
+    const callback = (value:any) => {
+      clearTimeout(timeout);
+      braidClient.removeListener('error', handleError);
+      cachedUnsubscribe(key, callback);
+      resolve(value);
+    };
+    const handleError = (error:Error) => {
+      clearTimeout(timeout);
+      braidClient.removeListener('error', handleError);
+      cachedUnsubscribe(key, callback);
+      reject(error);
+    };
+    braidClient.on('error', handleError);
+    callbackSet = new Set([callback]);
+    callbackMap.set(key, callbackSet);
+    subscribeWithErrorHandler(key);
+  });
+};
 
 export const triggerDelete = (key:string) => {
   braidClient.data.delete(key);
