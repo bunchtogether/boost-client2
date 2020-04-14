@@ -247,24 +247,47 @@ export const snapshot = (key       , defaultValue      )              => {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       braidClient.removeListener('error', handleError);
+      braidClient.data.removeListener('affirm', handleAffirm);
       cachedUnsubscribe(key, callback);
       reject(new Error(`Snapshot timeout for ${key}`));
     }, 5000);
     const callback = (value    ) => {
       clearTimeout(timeout);
       braidClient.removeListener('error', handleError);
+      braidClient.data.removeListener('affirm', handleAffirm);
       cachedUnsubscribe(key, callback);
       resolve(value);
     };
     const handleError = (error      ) => {
       clearTimeout(timeout);
       braidClient.removeListener('error', handleError);
+      braidClient.data.removeListener('affirm', handleAffirm);
       cachedUnsubscribe(key, callback);
       reject(error);
+    };
+    const handleAffirm = (k       , v    ) => {
+      if (k !== key) {
+        return;
+      }
+      clearTimeout(timeout);
+      braidClient.removeListener('error', handleError);
+      braidClient.data.removeListener('affirm', handleAffirm);
+      cachedUnsubscribe(key, callback);
+      const cached = cache[key];
+      if (cached) {
+        resolve(cached);
+        return;
+      }
+      if (typeof v !== 'undefined') {
+        resolve(fromJS(v));
+        return;
+      }
+      resolve(undefined);
     };
     braidClient.on('error', handleError);
     callbackSet = new Set([callback]);
     callbackMap.set(key, callbackSet);
+    braidClient.data.on('affirm', handleAffirm);
     subscribeWithErrorHandler(key);
   });
 };
