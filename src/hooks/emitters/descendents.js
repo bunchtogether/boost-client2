@@ -58,6 +58,7 @@ export default class DescendentEmitter extends EventEmitter {
   }
 
   cleanup() {
+    this.emit('cleanup');
     if (!this.name) {
       return;
     }

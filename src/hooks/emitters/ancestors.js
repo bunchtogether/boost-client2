@@ -58,6 +58,7 @@ export default class AncestorEmitter extends EventEmitter {
   }
 
   cleanup() {
+    this.emit('cleanup');
     if (!this.name) {
       return;
     }

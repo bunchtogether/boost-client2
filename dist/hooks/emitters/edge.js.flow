@@ -36,6 +36,7 @@ export default class EdgeEmitter extends EventEmitter {
   }
 
   cleanup() {
+    this.emit('cleanup');
     if (!this.name) {
       return;
     }

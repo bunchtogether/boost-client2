@@ -36,6 +36,7 @@ export default class PermissionsEmitter extends EventEmitter {
   }
 
   cleanup() {
+    this.emit('cleanup');
     if (!this.name) {
       return;
     }
