@@ -1,5 +1,6 @@
 //      
 
+                                               
 import { fromJS } from 'immutable';
 import { eventChannel } from 'redux-saga';
 import Client from '@bunchtogether/braid-client';
@@ -204,7 +205,7 @@ export const cachedUnsubscribe = (key       , callback              ) => {
   }
 };
 
-export const getReduxChannel = (key        , defaultValue      ) => eventChannel((emit          ) => {
+export const getReduxChannel = (key        , defaultValue      )                   => eventChannel((emit          ) => {
   const handle = (value     ) => {
     if (typeof value !== 'undefined') {
       emit(value);

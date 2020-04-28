@@ -1,5 +1,6 @@
 // @flow
 
+import type { EventChannel } from 'redux-saga';
 import { fromJS } from 'immutable';
 import { eventChannel } from 'redux-saga';
 import Client from '@bunchtogether/braid-client';
@@ -204,7 +205,7 @@ export const cachedUnsubscribe = (key:string, callback:(any) => void) => {
   }
 };
 
-export const getReduxChannel = (key: string, defaultValue?: any) => eventChannel((emit: Function) => {
+export const getReduxChannel = (key: string, defaultValue?: any):EventChannel<any> => eventChannel((emit: Function) => {
   const handle = (value: any) => {
     if (typeof value !== 'undefined') {
       emit(value);
