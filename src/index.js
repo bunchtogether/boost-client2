@@ -6,8 +6,10 @@ import { eventChannel } from 'redux-saga';
 import Client from '@bunchtogether/braid-client';
 import AsyncStorage from '@callstack/async-storage';
 
+
 const callbackMap:Map<string, Set<(any) => void>> = new Map();
 const cache = {};
+const affirmed = {};
 
 export class BoostCatastrophicError extends Error {
   constructor(message:string) {
@@ -68,11 +70,16 @@ const loadAsync = async () => {
   }
   braidClient.data.process([insertions, []]);
   await new Promise((resolve) => setImmediate(resolve));
+  braidClient.data.on('affirm', (key:string) => {
+    affirmed[key] = true;
+  });
   braidClient.data.on('set', (key:string) => {
+    affirmed[key] = true;
     cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
     flush();
   });
   braidClient.data.on('delete', (key:string) => {
+    affirmed[key] = true;
     cacheMap.set(`@b${key}`, undefined);
     flush();
   });
@@ -101,11 +108,16 @@ const loadSync = () => {
   }
   braidClient.data.process([insertions, []]);
   setImmediate(() => {
+    braidClient.data.on('affirm', (key:string) => {
+      affirmed[key] = true;
+    });
     braidClient.data.on('set', (key) => {
+      affirmed[key] = true;
       cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
       flush();
     });
     braidClient.data.on('delete', (key) => {
+      affirmed[key] = true;
       cacheMap.set(`@b${key}`, undefined);
       flush();
     });
@@ -200,6 +212,7 @@ export const cachedUnsubscribe = (key:string, callback:(any) => void) => {
   }
   callbackSet.delete(callback);
   if (callbackSet.size === 0) {
+    delete affirmed[key];
     callbackMap.delete(key);
     braidClient.unsubscribe(key);
   }
@@ -242,7 +255,7 @@ export const cachedSnapshot = (key:string, defaultValue?: any):Promise<any> => n
 
 export const snapshot = (key:string, defaultValue?: any):Promise<any> => {
   let callbackSet = callbackMap.get(key);
-  if (callbackSet) {
+  if (callbackSet && affirmed[key]) {
     return cachedSnapshot(key, defaultValue);
   }
   return new Promise((resolve, reject) => {

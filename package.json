@@ -1,6 +1,6 @@
 {
   "name": "@bunchtogether/boost-client",
-  "version": "1.0.41",
+  "version": "1.0.42",
   "main": "dist/index.js",
   "repository": "https://github.com/bunchtogether/boost-client2.git",
   "author": "johnwehr@bunchtogether.com",
@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
     "@babel/plugin-transform-flow-strip-types": "^7.9.0",
     "babel-eslint": "^10.1.0",
     "codecov": "^3.6.5",
@@ -47,6 +48,7 @@
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-react": "^7.19.0",
     "expect": "^25.5.0",
+    "flow-bin": "^0.125.1",
     "flow-copy-source": "^2.0.9",
     "flow-typed": "^3.1.0",
     "husky": "^4.2.5",
