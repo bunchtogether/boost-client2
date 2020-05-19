@@ -299,7 +299,11 @@ export const snapshot = (key:string, defaultValue?: any):Promise<any> => {
       resolve(undefined);
     };
     braidClient.on('error', handleError);
-    callbackSet = new Set([callback]);
+    if (callbackSet) {
+      callbackSet.add(callback);
+    } else {
+      callbackSet = new Set([callback]);
+    }
     callbackMap.set(key, callbackSet);
     braidClient.data.on('affirm', handleAffirm);
     subscribeWithErrorHandler(key);
