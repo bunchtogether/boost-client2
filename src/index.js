@@ -299,7 +299,7 @@ export const snapshot = (key:string, defaultValue?: any):Promise<any> => {
       resolve(undefined);
     };
     braidClient.on('error', handleError);
-    if(callbackSet) {
+    if (callbackSet) {
       callbackSet.add(callback);
     } else {
       callbackSet = new Set([callback]);

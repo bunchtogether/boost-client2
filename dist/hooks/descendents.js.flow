@@ -1,33 +1,48 @@
 // @flow
 
+import { pick, isEmpty } from 'lodash';
+import queryString from 'query-string';
 import { useState, useEffect } from 'react';
 import { List } from 'immutable';
-import DescendentEmitter from './emitters/descendents';
+import { cachedSubscribe, cachedUnsubscribe } from '../..';
+
+const parameterNames = [
+  'depth',
+  'sort',
+  'order',
+  'limit',
+  'offset',
+  'filter',
+  'edgeContains',
+  'hasChild',
+  'hasParent',
+  'type',
+  'typesInTree',
+  'query',
+  'includeInactive',
+];
 
 export default (id?: string, parameters?:Object) => {
   const [value, setValue] = useState();
-
   useEffect(() => {
-    const emitter = new DescendentEmitter(id, parameters);
-
-    const parseValue = (v:any) => {
-      if (!List.isList(v)) {
-        return undefined;
-      }
-      return v.toJS();
-    };
-
+    if (!id) {
+      return;
+    }
+    const options = pick(parameters, [...parameterNames]);
+    if (options.type && typeof options.type === 'string') {
+      options.type = options.type.split(',');
+    }
+    const name = isEmpty(options) ? `n/${id}/descendents` : `n/${id}/descendents?${queryString.stringify(options)}`;
     const handleValue = (v:any) => {
-      setValue(parseValue(v));
+      if (!List.isList(v)) {
+        setValue(undefined);
+      } else {
+        setValue(v.toJS());
+      }
     };
-
-    emitter.on('value', handleValue);
-
-    setValue(parseValue(emitter.value));
-
-    return function cleanup() {
-      emitter.removeListener('value', handleValue);
-      emitter.cleanup();
+    cachedSubscribe(name, handleValue);
+    return () => { // eslint-disable-line consistent-return
+      cachedUnsubscribe(name, handleValue);
     };
   }, [id, JSON.stringify(parameters)]);
 
