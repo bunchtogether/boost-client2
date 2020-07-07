@@ -37,7 +37,7 @@ export default (parameters             = {}) => function wrap               (Com
     const ids = parameters.idsName ? props[parameters.idsName] : props.ids;
     const teamId = parameters.teamIdName ? props[parameters.teamIdName] : props.teamId;
 
-    const hasIds = (!Array.isArray(ids) || ids.length === 0);
+    const hasIds = (Array.isArray(ids) && ids.length > 0);
     if ((!id && !hasIds) || !teamId) {
       return undefined;
     }
