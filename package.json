@@ -1,6 +1,6 @@
 {
   "name": "@bunchtogether/boost-client",
-  "version": "1.0.43",
+  "version": "1.0.45",
   "main": "dist/index.js",
   "repository": "https://github.com/bunchtogether/boost-client2.git",
   "author": "johnwehr@bunchtogether.com",

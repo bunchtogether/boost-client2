@@ -23,6 +23,7 @@ type Parameters = {
   propertyName?: string,
   idName?: string,
   teamIdName?: string,
+  idsName?: string,
 };
 
 type State = {
@@ -33,15 +34,19 @@ type State = {
 export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: List<string> }>> {
   const getName = (props: Props) => {
     const id = parameters.idName ? props[parameters.idName] : props.id;
+    const ids = parameters.idsName ? props[parameters.idsName] : props.ids;
     const teamId = parameters.teamIdName ? props[parameters.teamIdName] : props.teamId;
-    if (!id || !teamId) {
+
+    const hasIds = (Array.isArray(ids) && ids.length > 0);
+    if ((!id && !hasIds) || !teamId) {
       return undefined;
     }
+    const nodeIds = hasIds ? ids.join('/') : id;
     const options = getParameters(parameters, props);
     if (isEmpty(options)) {
-      return `notifications/${teamId}/${id}`;
+      return `notifications/${teamId}/${nodeIds}`;
     }
-    return `notifications/${teamId}/${id}?${queryString.stringify(options)}`;
+    return `notifications/${teamId}/${nodeIds}?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component<Props, State> {
