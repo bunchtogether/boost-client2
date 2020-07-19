@@ -12,10 +12,8 @@ const parameterNames = [
   'order',
   'limit',
   'offset',
-  'filter',
   'edgeContains',
-  'hasChild',
-  'hasParent',
+  'filter',
   'type',
   'typesInTree',
   'query',
@@ -32,7 +30,7 @@ export default (id?: string, parameters?:Object) => {
     if (options.type && typeof options.type === 'string') {
       options.type = options.type.split(',');
     }
-    const name = isEmpty(options) ? `n/${id}/descendents` : `n/${id}/descendents?${queryString.stringify(options)}`;
+    const name = isEmpty(options) ? `n/${id}/tree` : `n/${id}/tree?${queryString.stringify(options)}`;
     const handleValue = (v:any) => {
       if (!List.isList(v)) {
         setValue(undefined);

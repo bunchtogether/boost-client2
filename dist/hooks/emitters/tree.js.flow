@@ -11,8 +11,10 @@ const parameterNames = [
   'order',
   'limit',
   'offset',
+  'edgeContains',
   'filter',
-  'types',
+  'type',
+  'typesInTree',
   'query',
   'includeInactive',
 ];
@@ -30,7 +32,7 @@ export default class TreeEmitter extends EventEmitter {
       this.cleanup();
       return;
     }
-    const options = pick(parameters, [...parameterNames]);
+    const options = pick(parameters, parameterNames);
     if (options.type && typeof options.type === 'string') {
       options.type = options.type.split(',');
     }

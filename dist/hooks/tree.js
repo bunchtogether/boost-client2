@@ -1,4 +1,4 @@
-// @flow
+//      
 
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
@@ -12,17 +12,15 @@ const parameterNames = [
   'order',
   'limit',
   'offset',
-  'filter',
   'edgeContains',
-  'hasChild',
-  'hasParent',
+  'filter',
   'type',
   'typesInTree',
   'query',
   'includeInactive',
 ];
 
-export default (id?: string, parameters?:Object) => {
+export default (id         , parameters        ) => {
   const [value, setValue] = useState();
   useEffect(() => {
     if (!id) {
@@ -32,8 +30,8 @@ export default (id?: string, parameters?:Object) => {
     if (options.type && typeof options.type === 'string') {
       options.type = options.type.split(',');
     }
-    const name = isEmpty(options) ? `n/${id}/descendents` : `n/${id}/descendents?${queryString.stringify(options)}`;
-    const handleValue = (v:any) => {
+    const name = isEmpty(options) ? `n/${id}/tree` : `n/${id}/tree?${queryString.stringify(options)}`;
+    const handleValue = (v    ) => {
       if (!List.isList(v)) {
         setValue(undefined);
       } else {

@@ -13,8 +13,10 @@ const parameterNames = new Set([
   'order',
   'limit',
   'offset',
+  'edgeContains',
   'filter',
-  'types',
+  'type',
+  'typesInTree',
   'query',
   'includeInactive',
 ]);
@@ -28,8 +30,10 @@ const getParameters = (...args              )            => pick(Object.assign({
                  
                   
                   
+                        
+                                
                  
-                 
+                              
                             
                         
                   

@@ -28,7 +28,7 @@ export default (id         , parameters        ) => {
     if (!id) {
       return;
     }
-    const options = pick(parameters, [...parameterNames]);
+    const options = pick(parameters, parameterNames);
     if (options.type && typeof options.type === 'string') {
       options.type = options.type.split(',');
     }
