@@ -17,6 +17,7 @@ const parameterNames = new Set([
   'filter',
   'type',
   'typesInTree',
+  'typesInTreeWithDepth',
   'query',
   'includeInactive',
 ]);
@@ -34,9 +35,11 @@ type Parameters = {
   type?: string | Array<string>,
   query?: string,
   typesInTree?: Array<string>,
+  typesInTreeWithDepth?: Array<string>,
   includeInactive?: boolean,
   propertyName?: string,
   idName?: string,
+  types?: string,
 };
 
 type State = {
@@ -51,6 +54,12 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
       return undefined;
     }
     const options = getParameters(parameters, props);
+    if (parameters.types) {
+      if (!options.typesInTreeWithDepth) {
+        options.typesInTreeWithDepth = JSON.parse(parameters.types);
+      }
+      console.warn('Deprecated in components/withTree: "types" is deprecated please use "typesInTreeWithDepth"');
+    }
     if (isEmpty(options)) {
       return `n/${id}/tree`;
     }

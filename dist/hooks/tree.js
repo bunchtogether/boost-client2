@@ -16,6 +16,7 @@ const parameterNames = [
   'filter',
   'type',
   'typesInTree',
+  'typesInTreeWithDepth',
   'query',
   'includeInactive',
 ];
@@ -29,6 +30,12 @@ export default (id         , parameters        ) => {
     const options = pick(parameters, parameterNames);
     if (options.type && typeof options.type === 'string') {
       options.type = options.type.split(',');
+    }
+    if (parameters && parameters.types) {
+      if (!options.typesInTreeWithDepth) {
+        options.typesInTreeWithDepth = JSON.parse(parameters.types);
+      }
+      console.warn('Deprecated in hooks/tree: "types" is deprecated please use "typesInTreeWithDepth"');
     }
     const name = isEmpty(options) ? `n/${id}/tree` : `n/${id}/tree?${queryString.stringify(options)}`;
     const handleValue = (v    ) => {
