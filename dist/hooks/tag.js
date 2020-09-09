@@ -1,6 +1,7 @@
 //      
 
 import { useState, useEffect } from 'react';
+import { Map } from 'immutable';
 import { cachedSubscribe, cachedUnsubscribe } from '../..';
 
 export default (source        , target        ) => {
@@ -11,7 +12,11 @@ export default (source        , target        ) => {
     }
     const name = `tags/${source}/${target}`;
     const handleValue = (v) => {
-      setValue(v);
+      if (!Map.isMap(v)) {
+        setValue(undefined);
+      } else {
+        setValue(v.toJS());
+      }
     };
     cachedSubscribe(name, handleValue);
     return () => { // eslint-disable-line consistent-return
