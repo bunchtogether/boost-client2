@@ -1057,19 +1057,19 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bunchtogether/braid-client@^1.1.16":
-  version "1.1.16"
-  resolved "https://registry.yarnpkg.com/@bunchtogether/braid-client/-/braid-client-1.1.16.tgz#31b6c6cb095118376a3cd6d4687c51f83fc57b94"
-  integrity sha512-k+ccomsgEKVPMW6nGJVvoL3wXjZ3+3HNS3+F4WsHPZek2oZ1A8qmqBguY8rK9O+fOQJR+mJKG0VrBBTlneIIgw==
+"@bunchtogether/braid-client@^1.1.19":
+  version "1.1.19"
+  resolved "https://registry.yarnpkg.com/@bunchtogether/braid-client/-/braid-client-1.1.19.tgz#af8a60e26f018d78a3bd310ea7e8ce45feb5b3c6"
+  integrity sha512-1VshqOUpqBYq0j9kEExK+fYrgM0xJb7sXqbpPNwzlNgKqKFFdhxgiifj1tqLnkrgojDrPnPblk9jRa2wpRKXqQ==
   dependencies:
-    "@bunchtogether/braid-messagepack" "1.1.10"
+    "@bunchtogether/braid-messagepack" "1.1.19"
     isomorphic-ws "^4.0.1"
-    observed-remove "^2.2.26"
+    observed-remove "^2.2.27"
 
-"@bunchtogether/braid-messagepack@1.1.10":
-  version "1.1.10"
-  resolved "https://registry.yarnpkg.com/@bunchtogether/braid-messagepack/-/braid-messagepack-1.1.10.tgz#628d6f21675df9325c8c524854449c378b66eae0"
-  integrity sha512-jQvWqmPVOrA/whs2dKwVTj2Ce83BNY0NdDusaEgWDCR/54tLdUBRyWIGD8oYY1qJieqrElP2vICtKDqOYoS58g==
+"@bunchtogether/braid-messagepack@1.1.19":
+  version "1.1.19"
+  resolved "https://registry.yarnpkg.com/@bunchtogether/braid-messagepack/-/braid-messagepack-1.1.19.tgz#5a67822fb714568985968b62c4e9ae0abdf03dc6"
+  integrity sha512-bn6NF+Lg+V8vrr75LiQdIiN/jDFOmHehsG9gLE9oVgcMLpuNlFST/uCupdLOLowJfbSrai3eVQVY2RhmynZZHQ==
   dependencies:
     msgpack5 "^4.2.1"
 
@@ -5794,10 +5794,10 @@ object.values@^1.1.0, object.values@^1.1.1:
     function-bind "^1.1.1"
     has "^1.0.3"
 
-observed-remove@^2.2.26:
-  version "2.2.26"
-  resolved "https://registry.yarnpkg.com/observed-remove/-/observed-remove-2.2.26.tgz#ceb4f5ef568acdb1665e2546828e1d0d1f71bf62"
-  integrity sha512-/pmsriAQlYgRzJNkdWaSboyOHwVRzCWjgrrNwlHwRXZsZ26rzZIv0HFavkFRkNRn2GxL2goq14lXTPNRc3nIIw==
+observed-remove@^2.2.27:
+  version "2.2.27"
+  resolved "https://registry.yarnpkg.com/observed-remove/-/observed-remove-2.2.27.tgz#ab15174f4cb7a0d4df182c37a9776486c476f886"
+  integrity sha512-cVPnulspGtGBqfNGn2KiF1IJ0Q7H6nPsIuv/7w7lYof/r7uIP/jcXYpN2bmIFoq0TL9Wdz52THotGFCNj0v+nQ==
   dependencies:
     "@bunchtogether/hash-object" "^1.0.3"
     json-stringify-deterministic "^1.0.1"
