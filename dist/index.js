@@ -8,6 +8,7 @@ import AsyncStorage from '@callstack/async-storage';
 
 
 const callbackMap                                 = new Map();
+const errbackMap                                   = new Map();
 const cache = {};
 const affirmed = {};
 
@@ -156,55 +157,67 @@ if (window && window.localStorage) {
   loadAsync();
 }
 
+const subscribeWithErrorHandler = (key       ) => {
+  braidClient.subscribe(key).catch((error) => {
+    const errbackSet = errbackMap.get(key);
+    if (errbackSet) {
+      for (const eb of errbackSet) {
+        eb(error);
+      }
+    }
+    if (error.name === 'SubscribeError') {
+      if (error.code === 403) {
+        console.log(`User is not authorized to subscribe to ${key}`);
+      }
+      console.error(`Server error when subscribing to ${key}`);
+    } else {
+      console.log(`Error subscribing to ${key}: ${error.message}`);
+    }
+    braidClient.emit('error', error);
+  });
+};
+
 export const cachedValue = (key         ) => { // eslint-disable-line consistent-return
   if (key) {
     return cache[key];
   }
 };
 
-const subscribeWithErrorHandler = async (key) => {
-  for (let i = 1; i < 100; i += 1) {
-    try {
-      await braidClient.subscribe(key);
-      return;
-    } catch (error) {
-      if (error.name === 'SubscribeError') {
-        if (error.code === 403) {
-          console.log(`User is not authorized to subscribe to ${key}`);
-          return;
-        }
-        console.error(`Server error when subscribing to ${key} on attempt ${i}`);
-      } else {
-        console.log(`Error subscribing to ${key}: ${error.message}`);
-        braidClient.emit('error', error);
-        return;
-      }
-    }
-    if (i < 6) {
-      await new Promise((resolve) => setTimeout(resolve, i * i * 1000));
-    } else {
-      await new Promise((resolve) => setTimeout(resolve, 30000));
-    }
-    if (!callbackMap.has(key)) {
-      return;
-    }
-  }
-  braidClient.emit('error', new BoostCatastrophicError(`Unable to request key ${key}`));
-};
-
-export const cachedSubscribe = (key        , callback               ) => {
+export const cachedSubscribe = (key        , callback               , errback                  ) => {
   let callbackSet = callbackMap.get(key);
+  const errbackSet = errbackMap.get(key);
   if (callbackSet) {
     callbackSet.add(callback);
+    if (typeof errback === 'function') {
+      if (errbackSet) {
+        errbackSet.add(errback);
+      } else {
+        errbackMap.set(key, new Set([errback]));
+      }
+    }
   } else {
     callbackSet = new Set([callback]);
     callbackMap.set(key, callbackSet);
+    if (typeof errback === 'function') {
+      if (errbackSet) {
+        errbackSet.add(errback);
+      } else {
+        errbackMap.set(key, new Set([errback]));
+      }
+    }
     subscribeWithErrorHandler(key);
   }
   callback(cache[key]);
 };
 
-export const cachedUnsubscribe = (key       , callback              ) => {
+export const cachedUnsubscribe = (key       , callback              , errback                  ) => {
+  const errbackSet = errbackMap.get(key);
+  if (typeof errback === 'function' && errbackSet) {
+    errbackSet.delete(errback);
+    if (errbackSet.size === 0) {
+      errbackMap.delete(key);
+    }
+  }
   const callbackSet = callbackMap.get(key);
   if (!callbackSet) {
     braidClient.unsubscribe(key);
@@ -219,93 +232,86 @@ export const cachedUnsubscribe = (key       , callback              ) => {
 };
 
 export const getReduxChannel = (key        , defaultValue      )                   => eventChannel((emit          ) => {
-  const handle = (value     ) => {
+  const handleValue = (value     ) => {
     if (typeof value !== 'undefined') {
       emit(value);
     } else if (typeof defaultValue !== 'undefined') {
       emit(defaultValue);
     }
   };
+  const handleError = (error       ) => {
+    emit(error);
+  };
   setImmediate(() => {
-    cachedSubscribe(key, handle);
+    cachedSubscribe(key, handleValue, handleError);
   });
   return () => {
-    cachedUnsubscribe(key, handle);
+    cachedUnsubscribe(key, handleValue, handleError);
   };
 });
 
-export const cachedSnapshot = (key       , defaultValue      )              => new Promise((resolve, reject) => {
-  const timeout = setTimeout(() => {
-    cachedUnsubscribe(key, handleValue);
-    if (typeof defaultValue !== 'undefined') {
-      resolve(defaultValue);
-    } else {
-      reject(new Error(`Snapshot timeout for ${key}`));
-    }
-  }, 5000);
-  const handleValue = (value) => {
-    if (typeof value !== 'undefined') {
-      clearTimeout(timeout);
-      cachedUnsubscribe(key, handleValue);
-      resolve(value);
-    }
-  };
-  cachedSubscribe(key, handleValue);
-});
+export const cachedSnapshot = async (key       , defaultValue      )              => {
+  if (typeof cache[key] !== 'undefined') {
+    return cache[key];
+  }
+  return snapshot(key, defaultValue);
+};
 
-export const snapshot = (key       , defaultValue      )              => {
-  let callbackSet = callbackMap.get(key);
-  if (callbackSet && affirmed[key]) {
-    return cachedSnapshot(key, defaultValue);
+export const snapshot = async (key       , defaultValue      )              => {
+  if (affirmed[key]) {
+    if (typeof cache[key] === 'undefined') {
+      return defaultValue;
+    }
+    return cache[key];
   }
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      braidClient.removeListener('error', handleError);
+    const handleValue = (value    ) => {
       braidClient.data.removeListener('affirm', handleAffirm);
-      cachedUnsubscribe(key, callback);
-      reject(new Error(`Snapshot timeout for ${key}`));
-    }, 5000);
-    const callback = (value    ) => {
-      clearTimeout(timeout);
-      braidClient.removeListener('error', handleError);
-      braidClient.data.removeListener('affirm', handleAffirm);
-      cachedUnsubscribe(key, callback);
-      resolve(value);
+      cachedUnsubscribe(key, handleValue, handleError);
+      if (typeof value === 'undefined') {
+        resolve(defaultValue);
+      } else {
+        resolve(value);
+      }
     };
-    const handleError = (error      ) => {
-      clearTimeout(timeout);
-      braidClient.removeListener('error', handleError);
+    const handleError = (error       ) => {
       braidClient.data.removeListener('affirm', handleAffirm);
-      cachedUnsubscribe(key, callback);
+      cachedUnsubscribe(key, handleValue, handleError);
       reject(error);
     };
     const handleAffirm = (k       , v    ) => {
       if (k !== key) {
         return;
       }
-      clearTimeout(timeout);
-      braidClient.removeListener('error', handleError);
       braidClient.data.removeListener('affirm', handleAffirm);
-      cachedUnsubscribe(key, callback);
+      cachedUnsubscribe(key, handleValue, handleError);
       const cached = cache[key];
-      if (cached) {
+      if (typeof cached !== 'undefined') {
         resolve(cached);
         return;
       }
       if (typeof v !== 'undefined') {
-        resolve(fromJS(v));
+        const immutableValue = fromJS(v);
+        cache[key] = immutableValue;
+        resolve(immutableValue);
         return;
       }
-      resolve(undefined);
+      resolve(defaultValue);
     };
-    braidClient.on('error', handleError);
-    if (callbackSet) {
-      callbackSet.add(callback);
-    } else {
-      callbackSet = new Set([callback]);
-    }
-    callbackMap.set(key, callbackSet);
     braidClient.data.on('affirm', handleAffirm);
+    let errbackSet = errbackMap.get(key);
+    if (!errbackSet) {
+      errbackSet = new Set();
+      errbackMap.set(key, errbackSet);
+    }
+    errbackSet.add(handleError);
+    let callbackSet = callbackMap.get(key);
+    if (callbackSet) {
+      callbackSet.add(handleValue);
+      return;
+    }
+    callbackSet = new Set([handleValue]);
+    callbackMap.set(key, callbackSet);
     subscribeWithErrorHandler(key);
   });
 };
