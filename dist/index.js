@@ -19,6 +19,7 @@ export class BoostCatastrophicError extends Error {
 }
 
 export const braidClient = new Client();
+braidClient.timeoutDuration = 60000;
 
 let cacheMap = new Map();
 let flushPromise = null;
@@ -264,7 +265,7 @@ export const snapshot = (key       , defaultValue      )              => {
       braidClient.data.removeListener('affirm', handleAffirm);
       cachedUnsubscribe(key, callback);
       reject(new Error(`Snapshot timeout for ${key}`));
-    }, 5000);
+    }, 60000);
     const callback = (value    ) => {
       clearTimeout(timeout);
       braidClient.removeListener('error', handleError);
