@@ -2,7 +2,7 @@
 
                                                
 import { fromJS } from 'immutable';
-import { eventChannel } from 'redux-saga';
+import { eventChannel, buffers } from 'redux-saga';
 import Client from '@bunchtogether/braid-client';
 import AsyncStorage from '@callstack/async-storage';
 
@@ -242,13 +242,11 @@ export const getReduxChannel = (key        , defaultValue      )                
   const handleError = (error       ) => {
     emit(error);
   };
-  setImmediate(() => {
-    cachedSubscribe(key, handleValue, handleError);
-  });
+  cachedSubscribe(key, handleValue, handleError);
   return () => {
     cachedUnsubscribe(key, handleValue, handleError);
   };
-});
+}, buffers.expanding(2));
 
 export const cachedSnapshot = async (key       , defaultValue      )              => {
   if (typeof cache[key] !== 'undefined') {
