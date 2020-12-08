@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Map } from 'immutable';
-import NodeEmitter from './emitters/node';
+import { cachedSubscribe, cachedUnsubscribe } from '../..';
 
 export default (id         , metadataPath              ) => {
   const [value, setValue] = useState();
@@ -10,8 +10,10 @@ export default (id         , metadataPath              ) => {
   const path = ['metadata'].concat(metadataPath);
 
   useEffect(() => {
-    const nodeEmitter = new NodeEmitter(id);
-
+    if (!id) {
+      return;
+    }
+    const name = `n/${id}`;
     const parseNodeValue = (v    ) => {
       if (!Map.isMap(v)) {
         return undefined;
@@ -23,13 +25,9 @@ export default (id         , metadataPath              ) => {
       setValue(parseNodeValue(v));
     };
 
-    nodeEmitter.on('value', handleNodeValue);
-
-    setValue(parseNodeValue(nodeEmitter.value));
-
-    return function cleanup() {
-      nodeEmitter.removeListener('value', handleNodeValue);
-      nodeEmitter.cleanup();
+    cachedSubscribe(name, handleNodeValue);
+    return () => { // eslint-disable-line consistent-return
+      cachedUnsubscribe(name, handleNodeValue);
     };
   }, [id, JSON.stringify(metadataPath)]);
 
