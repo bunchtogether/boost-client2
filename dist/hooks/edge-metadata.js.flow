@@ -2,32 +2,36 @@
 
 import { useState, useEffect } from 'react';
 import { Map } from 'immutable';
-import { cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+
+const parse = (v:any, path:Array<string>) => {
+  if (Map.isMap(v)) {
+    return v.getIn(path);
+  }
+  return undefined;
+};
+
+const getName = (parent:string, child:string) => `e/${parent}/${child}`;
 
 export default (parent?: string, child?: string, metadataPath:Array<string>) => {
-  const [value, setValue] = useState();
-
   const path = ['metadata'].concat(metadataPath);
 
+  const [value, setValue] = useState(typeof parent === 'string' && typeof child === 'string' ? parse(cachedValue(getName(parent, child)), path) : undefined);
+
   useEffect(() => {
-    if (!parent || !child) {
+    if (typeof parent !== 'string' || typeof child !== 'string') {
+      setValue(undefined);
       return;
     }
-    const name = `e/${parent}/${child}`;
-    const parseEdgeValue = (v:any) => {
-      if (!Map.isMap(v)) {
-        return undefined;
-      }
-      return v.getIn(path);
+    const name = getName(parent, child);
+
+    const handleValue = (v:any) => {
+      setValue(parse(v, path));
     };
 
-    const handleEdgeValue = (v:any) => {
-      setValue(parseEdgeValue(v));
-    };
-
-    cachedSubscribe(name, handleEdgeValue);
+    cachedSubscribe(name, handleValue);
     return () => { // eslint-disable-line consistent-return
-      cachedUnsubscribe(name, handleEdgeValue);
+      cachedUnsubscribe(name, handleValue);
     };
   }, [parent, child, JSON.stringify(metadataPath)]);
 

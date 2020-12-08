@@ -2,32 +2,36 @@
 
 import { useState, useEffect } from 'react';
 import { Map } from 'immutable';
-import { cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+
+const parse = (v    , path              ) => {
+  if (Map.isMap(v)) {
+    return v.getIn(path);
+  }
+  return undefined;
+};
+
+const getName = (id       ) => `n/${id}`;
 
 export default (id         , metadataPath              ) => {
-  const [value, setValue] = useState();
-
   const path = ['metadata'].concat(metadataPath);
 
+  const [value, setValue] = useState(typeof id === 'string' ? parse(cachedValue(getName(id)), path) : undefined);
+
   useEffect(() => {
-    if (!id) {
+    if (typeof id !== 'string') {
+      setValue(undefined);
       return;
     }
-    const name = `n/${id}`;
-    const parseNodeValue = (v    ) => {
-      if (!Map.isMap(v)) {
-        return undefined;
-      }
-      return v.getIn(path);
+    const name = getName(id);
+
+    const handleValue = (v    ) => {
+      setValue(parse(v, path));
     };
 
-    const handleNodeValue = (v    ) => {
-      setValue(parseNodeValue(v));
-    };
-
-    cachedSubscribe(name, handleNodeValue);
+    cachedSubscribe(name, handleValue);
     return () => { // eslint-disable-line consistent-return
-      cachedUnsubscribe(name, handleNodeValue);
+      cachedUnsubscribe(name, handleValue);
     };
   }, [id, JSON.stringify(metadataPath)]);
 

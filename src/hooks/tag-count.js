@@ -3,7 +3,7 @@
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { useState, useEffect } from 'react';
-import { cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
 const parameterNames = [
   'type',
@@ -11,17 +11,22 @@ const parameterNames = [
   'hasParent',
 ];
 
-export default (id: string, parameters?: Object) => {
-  const [value, setValue] = useState();
+const getName = (id:string, parameters?: Object = {}) => {
+  const options = pick(parameters, parameterNames);
+  if (options.type && typeof options.type === 'string') {
+    options.type = options.type.split(',');
+  }
+  return isEmpty(options) ? `tags/${id}/count` : `tags/${id}/count?${queryString.stringify(options)}`;
+};
+
+export default (id?: string, parameters?: Object) => {
+  const [value, setValue] = useState(typeof id === 'string' ? cachedValue(getName(id, parameters)) : undefined);
   useEffect(() => {
-    if (!id) {
+    if (typeof id !== 'string') {
+      setValue(undefined);
       return;
     }
-    const options = pick(parameters, parameterNames);
-    if (options.type && typeof options.type === 'string') {
-      options.type = options.type.split(',');
-    }
-    const name = isEmpty(options) ? `tags/${id}/count` : `tags/${id}/count?${queryString.stringify(options)}`;
+    const name = getName(id, parameters);
     const handleValue = (v) => {
       setValue(v);
     };

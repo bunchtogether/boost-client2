@@ -2,21 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import { Map } from 'immutable';
-import { cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
-export default (source        , target        ) => {
-  const [value, setValue] = useState();
+const parse = (v    ) => {
+  if (Map.isMap(v)) {
+    return v.toJS();
+  }
+  return undefined;
+};
+
+const getName = (source       , target       ) => `tags/${source}/${target}`;
+
+export default (source         , target         ) => {
+  const [value, setValue] = useState(typeof source === 'string' && typeof target === 'string' ? parse(cachedValue(getName(source, target))) : undefined);
   useEffect(() => {
-    if (!source || !target) {
+    if (typeof source !== 'string' || typeof target !== 'string') {
+      setValue(undefined);
       return;
     }
-    const name = `tags/${source}/${target}`;
-    const handleValue = (v) => {
-      if (!Map.isMap(v)) {
-        setValue(undefined);
-      } else {
-        setValue(v.toJS());
-      }
+    const name = getName(source, target);
+    const handleValue = (v    ) => {
+      setValue(parse(v));
     };
     cachedSubscribe(name, handleValue);
     return () => { // eslint-disable-line consistent-return
