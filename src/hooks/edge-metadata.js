@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Map } from 'immutable';
-import EdgeEmitter from './emitters/edge';
+import { cachedSubscribe, cachedUnsubscribe } from '../..';
 
 export default (parent?: string, child?: string, metadataPath:Array<string>) => {
   const [value, setValue] = useState();
@@ -10,8 +10,10 @@ export default (parent?: string, child?: string, metadataPath:Array<string>) => 
   const path = ['metadata'].concat(metadataPath);
 
   useEffect(() => {
-    const edgeEmitter = new EdgeEmitter(parent, child);
-
+    if (!parent || !child) {
+      return;
+    }
+    const name = `e/${parent}/${child}`;
     const parseEdgeValue = (v:any) => {
       if (!Map.isMap(v)) {
         return undefined;
@@ -23,13 +25,9 @@ export default (parent?: string, child?: string, metadataPath:Array<string>) => 
       setValue(parseEdgeValue(v));
     };
 
-    edgeEmitter.on('value', handleEdgeValue);
-
-    setValue(parseEdgeValue(edgeEmitter.value));
-
-    return function cleanup() {
-      edgeEmitter.removeListener('value', handleEdgeValue);
-      edgeEmitter.cleanup();
+    cachedSubscribe(name, handleEdgeValue);
+    return () => { // eslint-disable-line consistent-return
+      cachedUnsubscribe(name, handleEdgeValue);
     };
   }, [parent, child, JSON.stringify(metadataPath)]);
 
