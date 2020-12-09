@@ -29,7 +29,7 @@ export default (parent?: string, child?: string, metadataPath:Array<string>) => 
       setValue(parse(v, path));
     };
 
-    cachedSubscribe(name, handleValue);
+    cachedSubscribe(name, handleValue, undefined, true);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };

@@ -37,7 +37,7 @@ export default (teamId:string, ids:string | Array<string>, parameters?:Object) =
     const handleValue = (v:any) => {
       setValue(parse(v));
     };
-    cachedSubscribe(name, handleValue);
+    cachedSubscribe(name, handleValue, undefined, true);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };

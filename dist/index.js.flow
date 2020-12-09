@@ -183,7 +183,7 @@ export const cachedValue = (key?: string) => { // eslint-disable-line consistent
   }
 };
 
-export const cachedSubscribe = (key: string, callback: (any) => void, errback?: (Error) => void) => {
+export const cachedSubscribe = (key: string, callback: (any) => void, errback?: (Error) => void, skipInitialCallback?: boolean = false) => {
   let callbackSet = callbackMap.get(key);
   const errbackSet = errbackMap.get(key);
   if (callbackSet) {
@@ -207,7 +207,9 @@ export const cachedSubscribe = (key: string, callback: (any) => void, errback?: 
     }
     subscribeWithErrorHandler(key);
   }
-  callback(cache[key]);
+  if (!skipInitialCallback) {
+    callback(cache[key]);
+  }
 };
 
 export const cachedUnsubscribe = (key:string, callback:(any) => void, errback?: (Error) => void) => {

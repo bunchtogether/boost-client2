@@ -30,7 +30,7 @@ export default (id?: string, parameters?: Object) => {
     const handleValue = (v) => {
       setValue(v);
     };
-    cachedSubscribe(name, handleValue);
+    cachedSubscribe(name, handleValue, undefined, true);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };

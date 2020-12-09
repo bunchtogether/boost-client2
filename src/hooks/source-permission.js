@@ -57,7 +57,7 @@ export default (ids?:string | Array<string>, permission?: string, parameters?: O
       setValue(parse(v));
     };
 
-    cachedSubscribe(name, handleValue);
+    cachedSubscribe(name, handleValue, undefined, true);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };
