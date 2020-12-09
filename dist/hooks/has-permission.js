@@ -2,25 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { List } from 'immutable';
-import { cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+
+const parse = (v    , permission       ) => {
+  if (List.isList(v)) {
+    return v.includes(permission);
+  }
+  return undefined;
+};
+
+const getName = (sourceId       , targetId       ) => `p/${sourceId}/${targetId}`;
 
 export default (sourceId         , targetId         , permission        ) => {
-  const [value, setValue] = useState();
+  const [value, setValue] = useState(typeof sourceId === 'string' && typeof targetId === 'string' ? parse(cachedValue(getName(sourceId, targetId)), permission) : undefined);
 
   useEffect(() => {
-    if (!sourceId || !targetId) {
+    if (typeof sourceId !== 'string' || typeof targetId !== 'string') {
+      setValue(undefined);
       return;
     }
-    const name = `p/${sourceId}/${targetId}`;
-    const parseValue = (v    ) => {
-      if (!List.isList(v)) {
-        return undefined;
-      }
-      return v.includes(permission);
-    };
+    const name = getName(sourceId, targetId);
 
     const handleValue = (v    ) => {
-      setValue(parseValue(v));
+      setValue(parse(v, permission));
     };
 
     cachedSubscribe(name, handleValue);

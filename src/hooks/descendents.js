@@ -4,7 +4,7 @@ import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { useState, useEffect } from 'react';
 import { List } from 'immutable';
-import { cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
 const parameterNames = [
   'depth',
@@ -22,23 +22,31 @@ const parameterNames = [
   'includeInactive',
 ];
 
+const parse = (v:any) => {
+  if (List.isList(v)) {
+    return v.toJS();
+  }
+  return undefined;
+};
+
+const getName = (id:string, parameters?:Object = {}) => {
+  const options = pick(parameters, parameterNames);
+  if (options.type && typeof options.type === 'string') {
+    options.type = options.type.split(',');
+  }
+  return isEmpty(options) ? `n/${id}/descendents` : `n/${id}/descendents?${queryString.stringify(options)}`;
+};
+
 export default (id?: string, parameters?:Object) => {
-  const [value, setValue] = useState();
+  const [value, setValue] = useState(typeof id === 'string' ? parse(cachedValue(getName(id, parameters))) : undefined);
   useEffect(() => {
-    if (!id) {
+    if (typeof id !== 'string') {
+      setValue(undefined);
       return;
     }
-    const options = pick(parameters, parameterNames);
-    if (options.type && typeof options.type === 'string') {
-      options.type = options.type.split(',');
-    }
-    const name = isEmpty(options) ? `n/${id}/descendents` : `n/${id}/descendents?${queryString.stringify(options)}`;
+    const name = getName(id, parameters);
     const handleValue = (v:any) => {
-      if (!List.isList(v)) {
-        setValue(undefined);
-      } else {
-        setValue(v.toJS());
-      }
+      setValue(parse(v));
     };
     cachedSubscribe(name, handleValue);
     return () => { // eslint-disable-line consistent-return

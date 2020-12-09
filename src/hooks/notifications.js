@@ -4,7 +4,7 @@ import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { useState, useEffect } from 'react';
 import { List } from 'immutable';
-import { cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
 const parameterNames = [
   'limit',
@@ -13,31 +13,35 @@ const parameterNames = [
   'query',
 ];
 
+const parse = (v:any) => {
+  if (List.isList(v)) {
+    return v.toJS();
+  }
+  return undefined;
+};
+
+const getName = (teamId:string, ids:string | Array<string>, parameters?:Object = {}) => {
+  const nodeIds = Array.isArray(ids) ? ids.join('/') : ids;
+  const options = pick(parameters, parameterNames);
+  return isEmpty(options) ? `notifications/${teamId}/${nodeIds}` : `notifications/${teamId}/${nodeIds}?${queryString.stringify(options)}`;
+};
+
 export default (teamId:string, ids:string | Array<string>, parameters?:Object) => {
-  const [value, setValue] = useState();
+  const [value, setValue] = useState(typeof ids === 'string' || (Array.isArray(ids) && ids.length > 0) ? parse(cachedValue(getName(teamId, ids, parameters))) : undefined);
   useEffect(() => {
-    const isArray = Array.isArray(ids);
-    if (!ids || (!isArray && typeof ids !== 'string')) {
+    if (!(typeof ids === 'string' || Array.isArray(ids)) || (Array.isArray(ids) && ids.length === 0)) {
+      setValue(undefined);
       return;
     }
-    if (isArray && ids.length === 0) {
-      return;
-    }
-    const nodeIds = Array.isArray(ids) ? ids.join('/') : ids;
-    const options = pick(parameters, parameterNames);
-    const name = isEmpty(options) ? `notifications/${teamId}/${nodeIds}` : `notifications/${teamId}/${nodeIds}?${queryString.stringify(options)}`;
+    const name = getName(teamId, ids, parameters);
     const handleValue = (v:any) => {
-      if (!List.isList(v)) {
-        setValue(undefined);
-      } else {
-        setValue(v.toJS());
-      }
+      setValue(parse(v));
     };
     cachedSubscribe(name, handleValue);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };
-  }, [JSON.stringify(ids), JSON.stringify(parameters)]);
+  }, [teamId, JSON.stringify(ids), JSON.stringify(parameters)]);
 
   return value;
 };

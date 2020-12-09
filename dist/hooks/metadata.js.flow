@@ -2,32 +2,36 @@
 
 import { useState, useEffect } from 'react';
 import { Map } from 'immutable';
-import { cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+
+const parse = (v:any, path:Array<string>) => {
+  if (Map.isMap(v)) {
+    return v.getIn(path);
+  }
+  return undefined;
+};
+
+const getName = (id:string) => `n/${id}`;
 
 export default (id?: string, metadataPath:Array<string>) => {
-  const [value, setValue] = useState();
-
   const path = ['metadata'].concat(metadataPath);
 
+  const [value, setValue] = useState(typeof id === 'string' ? parse(cachedValue(getName(id)), path) : undefined);
+
   useEffect(() => {
-    if (!id) {
+    if (typeof id !== 'string') {
+      setValue(undefined);
       return;
     }
-    const name = `n/${id}`;
-    const parseNodeValue = (v:any) => {
-      if (!Map.isMap(v)) {
-        return undefined;
-      }
-      return v.getIn(path);
+    const name = getName(id);
+
+    const handleValue = (v:any) => {
+      setValue(parse(v, path));
     };
 
-    const handleNodeValue = (v:any) => {
-      setValue(parseNodeValue(v));
-    };
-
-    cachedSubscribe(name, handleNodeValue);
+    cachedSubscribe(name, handleValue);
     return () => { // eslint-disable-line consistent-return
-      cachedUnsubscribe(name, handleNodeValue);
+      cachedUnsubscribe(name, handleValue);
     };
   }, [id, JSON.stringify(metadataPath)]);
 
