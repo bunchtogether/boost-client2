@@ -1,6 +1,6 @@
 // @flow
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Map } from 'immutable';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
@@ -17,8 +17,11 @@ export default (parent?: string, child?: string, metadataPath:Array<string>) => 
   const path = ['metadata'].concat(metadataPath);
 
   const [value, setValue] = useState(typeof parent === 'string' && typeof child === 'string' ? parse(cachedValue(getName(parent, child)), path) : undefined);
+  const initialCallbackRef = useRef(!!value);
 
   useEffect(() => {
+    const skipInitialCallback = initialCallbackRef.current;
+    initialCallbackRef.current = false;
     if (typeof parent !== 'string' || typeof child !== 'string') {
       setValue(undefined);
       return;
@@ -29,7 +32,7 @@ export default (parent?: string, child?: string, metadataPath:Array<string>) => 
       setValue(parse(v, path));
     };
 
-    cachedSubscribe(name, handleValue, undefined, true);
+    cachedSubscribe(name, handleValue, undefined, skipInitialCallback);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };

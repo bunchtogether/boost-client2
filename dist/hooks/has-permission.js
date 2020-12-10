@@ -1,6 +1,6 @@
 //      
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { List } from 'immutable';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
@@ -15,8 +15,11 @@ const getName = (sourceId       , targetId       ) => `p/${sourceId}/${targetId}
 
 export default (sourceId         , targetId         , permission        ) => {
   const [value, setValue] = useState(typeof sourceId === 'string' && typeof targetId === 'string' ? parse(cachedValue(getName(sourceId, targetId)), permission) : undefined);
+  const initialCallbackRef = useRef(!!value);
 
   useEffect(() => {
+    const skipInitialCallback = initialCallbackRef.current;
+    initialCallbackRef.current = false;
     if (typeof sourceId !== 'string' || typeof targetId !== 'string') {
       setValue(undefined);
       return;
@@ -27,7 +30,7 @@ export default (sourceId         , targetId         , permission        ) => {
       setValue(parse(v, permission));
     };
 
-    cachedSubscribe(name, handleValue, undefined, true);
+    cachedSubscribe(name, handleValue, undefined, skipInitialCallback);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };

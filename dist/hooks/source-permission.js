@@ -1,6 +1,6 @@
 //      
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { List } from 'immutable';
@@ -44,8 +44,11 @@ const getName = (ids                       , permission        , parameters     
 
 export default (ids                        , permission         , parameters         ) => {
   const [value, setValue] = useState(typeof permission === 'string' && (typeof ids === 'string' || (Array.isArray(ids) && ids.length > 0)) ? parse(cachedValue(getName(ids, permission, parameters))) : undefined);
+  const initialCallbackRef = useRef(!!value);
 
   useEffect(() => {
+    const skipInitialCallback = initialCallbackRef.current;
+    initialCallbackRef.current = false;
     if (!(typeof ids === 'string' || Array.isArray(ids)) || (Array.isArray(ids) && ids.length === 0) || typeof permission !== 'string') {
       setValue(undefined);
       return;
@@ -57,7 +60,7 @@ export default (ids                        , permission         , parameters    
       setValue(parse(v));
     };
 
-    cachedSubscribe(name, handleValue, undefined, true);
+    cachedSubscribe(name, handleValue, undefined, skipInitialCallback);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };
