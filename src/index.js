@@ -23,6 +23,12 @@ export class BoostCatastrophicError extends Error {
 
 export const braidClient = new Client();
 
+let braidClientOpen = Date.now();
+
+braidClient.on('open', () => {
+  braidClientOpen = Date.now();
+});
+
 let cacheMap = new Map();
 let flushPromise = null;
 const flush = () => {
@@ -200,10 +206,16 @@ export const cachedSubscribe = (key: string, callback: (any) => void, errback?: 
   const errbackSet = errbackMap.get(key);
   const start = Date.now();
   let receivedInitialValue = false;
+  const webSocket = !!braidClient.ws;
   const wrappedCallback = (value:any) => {
     if (!receivedInitialValue && (typeof value !== 'undefined' || affirmed[key] === true)) {
       receivedInitialValue = true;
-      metricsEmitter.emit('subscribe', key, Date.now() - start, { hasError: false, cached: false, skipInitialCallback });
+      metricsEmitter.emit('subscribe', key, Date.now() - start, {
+        hasError: false,
+        cached: false,
+        skipInitialCallback,
+        webSocketWait: webSocket ? 0 : braidClientOpen - start,
+      });
     }
     return callback(value);
   };
@@ -211,13 +223,25 @@ export const cachedSubscribe = (key: string, callback: (any) => void, errback?: 
   const wrappedErrback = typeof errback === 'function' ? ((error:Error) => {
     if (!receivedInitialValue) {
       receivedInitialValue = true;
-      metricsEmitter.emit('subscribe', key, Date.now() - start, { hasError: true, cached: false, skipInitialCallback, error: error.message });
+      metricsEmitter.emit('subscribe', key, Date.now() - start, {
+        hasError: true,
+        cached: false,
+        skipInitialCallback,
+        error: error.message,
+        webSocketWait: webSocket ? 0 : braidClientOpen - start,
+      });
     }
     return errback(error);
   }) : ((error:Error) => {
     if (!receivedInitialValue) {
       receivedInitialValue = true;
-      metricsEmitter.emit('subscribe', key, Date.now() - start, { hasError: true, cached: false, skipInitialCallback, error: error.message });
+      metricsEmitter.emit('subscribe', key, Date.now() - start, {
+        hasError: true,
+        cached: false,
+        skipInitialCallback,
+        error: error.message,
+        webSocketWait: webSocket ? 0 : braidClientOpen - start,
+      });
     }
   });
   wrappedErrbacks.set(errback || callback, wrappedErrback);
@@ -236,7 +260,12 @@ export const cachedSubscribe = (key: string, callback: (any) => void, errback?: 
   const cached = cache[key];
   if (typeof cached !== 'undefined' || affirmed[key] === true) {
     receivedInitialValue = true;
-    metricsEmitter.emit('subscribe', key, Date.now() - start, { hasError: false, cached: true, skipInitialCallback });
+    metricsEmitter.emit('subscribe', key, Date.now() - start, {
+      hasError: false,
+      cached: true,
+      skipInitialCallback,
+      webSocketWait: 0,
+    });
   }
   if (!skipInitialCallback) {
     callback(cached);
@@ -292,7 +321,11 @@ export const getReduxChannel = (key: string, defaultValue?: any):EventChannel<an
 export const cachedSnapshot = async (key:string, defaultValue?: any):Promise<any> => {
   const cached = cache[key];
   if (typeof cached !== 'undefined' || affirmed[key] === true) {
-    metricsEmitter.emit('snapshot', key, 0, { hasError: false, cached: true });
+    metricsEmitter.emit('snapshot', key, 0, {
+      hasError: false,
+      cached: true,
+      webSocketWait: 0,
+    });
     if (typeof cached !== 'undefined') {
       return defaultValue;
     }
@@ -304,8 +337,13 @@ export const cachedSnapshot = async (key:string, defaultValue?: any):Promise<any
 export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
   const start = Date.now();
   let receivedInitialValue = false;
+  const webSocket = !!braidClient.ws;
   if (affirmed[key]) {
-    metricsEmitter.emit('snapshot', key, Date.now() - start, { hasError: false, cached: true });
+    metricsEmitter.emit('snapshot', key, Date.now() - start, {
+      hasError: false,
+      cached: true,
+      webSocketWait: 0,
+    });
     if (typeof cache[key] === 'undefined') {
       return defaultValue;
     }
@@ -333,7 +371,11 @@ export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
       braidClient.data.removeListener('affirm', handleAffirm);
       if (!receivedInitialValue) {
         receivedInitialValue = true;
-        metricsEmitter.emit('snapshot', key, Date.now() - start, { hasError: false, cached: false });
+        metricsEmitter.emit('snapshot', key, Date.now() - start, {
+          hasError: false,
+          cached: false,
+          webSocketWait: webSocket ? 0 : braidClientOpen - start,
+        });
       }
       cachedUnsubscribe(key, handleValue, handleError);
       const cached = cache[key];
@@ -353,7 +395,12 @@ export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
     const wrappedErrback = (error:Error) => {
       if (!receivedInitialValue) {
         receivedInitialValue = true;
-        metricsEmitter.emit('snapshot', key, Date.now() - start, { hasError: true, cached: false, error: error.message });
+        metricsEmitter.emit('snapshot', key, Date.now() - start, {
+          hasError: true,
+          cached: false,
+          error: error.message,
+          webSocketWait: webSocket ? 0 : braidClientOpen - start,
+        });
       }
       return handleError(error);
     };
@@ -367,7 +414,11 @@ export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
     const wrappedCallback = (value:any) => {
       if (!receivedInitialValue && (typeof value !== 'undefined' || affirmed[key] === true)) {
         receivedInitialValue = true;
-        metricsEmitter.emit('snapshot', key, Date.now() - start, { hasError: false, cached: false });
+        metricsEmitter.emit('snapshot', key, Date.now() - start, {
+          hasError: false,
+          cached: false,
+          webSocketWait: webSocket ? 0 : braidClientOpen - start,
+        });
       }
       return handleValue(value);
     };
