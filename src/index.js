@@ -5,12 +5,14 @@ import { fromJS } from 'immutable';
 import { eventChannel, buffers } from 'redux-saga';
 import Client from '@bunchtogether/braid-client';
 import AsyncStorage from '@callstack/async-storage';
-
+import EventEmitter from 'events';
 
 const callbackMap:Map<string, Set<(any) => void>> = new Map();
 const errbackMap:Map<string, Set<(Error) => void>> = new Map();
 const cache = {};
 const affirmed = {};
+
+export const metricsEmitter = new EventEmitter();
 
 export class BoostCatastrophicError extends Error {
   constructor(message:string) {
@@ -152,9 +154,16 @@ braidClient.data.on('delete', (key:string) => {
 });
 
 if (window && window.localStorage) {
+  const start = Date.now();
   loadSync();
+  metricsEmitter.emit('load', Date.now() - start, { hasError: false });
 } else {
-  loadAsync();
+  const start = Date.now();
+  loadAsync().then(() => {
+    metricsEmitter.emit('load', Date.now() - start, { hasError: false });
+  }).catch((error:Error) => {
+    metricsEmitter.emit('load', Date.now() - start, { hasError: true, error: error.message });
+  });
 }
 
 const subscribeWithErrorHandler = (key:string) => {
@@ -183,39 +192,65 @@ export const cachedValue = (key?: string) => { // eslint-disable-line consistent
   }
 };
 
+const wrappedCallbacks = new Map();
+const wrappedErrbacks = new Map();
+
 export const cachedSubscribe = (key: string, callback: (any) => void, errback?: (Error) => void, skipInitialCallback?: boolean = false) => {
   let callbackSet = callbackMap.get(key);
   const errbackSet = errbackMap.get(key);
-  if (callbackSet) {
-    callbackSet.add(callback);
-    if (typeof errback === 'function') {
-      if (errbackSet) {
-        errbackSet.add(errback);
-      } else {
-        errbackMap.set(key, new Set([errback]));
-      }
+  const start = Date.now();
+  let receivedInitialValue = false;
+  const wrappedCallback = (value:any) => {
+    if (!receivedInitialValue && (typeof value !== 'undefined' || affirmed[key] === true)) {
+      receivedInitialValue = true;
+      metricsEmitter.emit('subscribe', key, Date.now() - start, { hasError: false, cached: false, skipInitialCallback });
     }
+    return callback(value);
+  };
+  wrappedCallbacks.set(callback, wrappedCallback);
+  const wrappedErrback = typeof errback === 'function' ? ((error:Error) => {
+    if (!receivedInitialValue) {
+      receivedInitialValue = true;
+      metricsEmitter.emit('subscribe', key, Date.now() - start, { hasError: true, cached: false, skipInitialCallback, error: error.message });
+    }
+    return errback(error);
+  }) : ((error:Error) => {
+    if (!receivedInitialValue) {
+      receivedInitialValue = true;
+      metricsEmitter.emit('subscribe', key, Date.now() - start, { hasError: true, cached: false, skipInitialCallback, error: error.message });
+    }
+  });
+  wrappedErrbacks.set(errback || callback, wrappedErrback);
+  if (errbackSet) {
+    errbackSet.add(wrappedErrback);
   } else {
-    callbackSet = new Set([callback]);
+    errbackMap.set(key, new Set([wrappedErrback]));
+  }
+  if (callbackSet) {
+    callbackSet.add(wrappedCallback);
+  } else {
+    callbackSet = new Set([wrappedCallback]);
     callbackMap.set(key, callbackSet);
-    if (typeof errback === 'function') {
-      if (errbackSet) {
-        errbackSet.add(errback);
-      } else {
-        errbackMap.set(key, new Set([errback]));
-      }
-    }
     subscribeWithErrorHandler(key);
   }
+  const cached = cache[key];
+  if (typeof cached !== 'undefined' || affirmed[key] === true) {
+    receivedInitialValue = true;
+    metricsEmitter.emit('subscribe', key, Date.now() - start, { hasError: false, cached: true, skipInitialCallback });
+  }
   if (!skipInitialCallback) {
-    callback(cache[key]);
+    callback(cached);
   }
 };
 
 export const cachedUnsubscribe = (key:string, callback:(any) => void, errback?: (Error) => void) => {
   const errbackSet = errbackMap.get(key);
-  if (typeof errback === 'function' && errbackSet) {
-    errbackSet.delete(errback);
+  if (errbackSet) {
+    const wrappedErrback = wrappedErrbacks.get(errback || callback);
+    if (typeof wrappedErrback !== 'function') {
+      throw new Error(`Wrapped errback does not exist for ${key}`);
+    }
+    errbackSet.delete(wrappedErrback);
     if (errbackSet.size === 0) {
       errbackMap.delete(key);
     }
@@ -225,7 +260,11 @@ export const cachedUnsubscribe = (key:string, callback:(any) => void, errback?: 
     braidClient.unsubscribe(key);
     return;
   }
-  callbackSet.delete(callback);
+  const wrappedCallback = wrappedCallbacks.get(callback);
+  if (typeof wrappedCallback !== 'function') {
+    throw new Error(`Wrapped callback does not exist for ${key}`);
+  }
+  callbackSet.delete(wrappedCallback);
   if (callbackSet.size === 0) {
     delete affirmed[key];
     callbackMap.delete(key);
@@ -251,14 +290,22 @@ export const getReduxChannel = (key: string, defaultValue?: any):EventChannel<an
 }, buffers.expanding(2));
 
 export const cachedSnapshot = async (key:string, defaultValue?: any):Promise<any> => {
-  if (typeof cache[key] !== 'undefined') {
-    return cache[key];
+  const cached = cache[key];
+  if (typeof cached !== 'undefined' || affirmed[key] === true) {
+    metricsEmitter.emit('snapshot', key, 0, { hasError: false, cached: true });
+    if (typeof cached !== 'undefined') {
+      return defaultValue;
+    }
+    return cached;
   }
   return snapshot(key, defaultValue);
 };
 
 export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
+  const start = Date.now();
+  let receivedInitialValue = false;
   if (affirmed[key]) {
+    metricsEmitter.emit('snapshot', key, Date.now() - start, { hasError: false, cached: true });
     if (typeof cache[key] === 'undefined') {
       return defaultValue;
     }
@@ -284,6 +331,10 @@ export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
         return;
       }
       braidClient.data.removeListener('affirm', handleAffirm);
+      if (!receivedInitialValue) {
+        receivedInitialValue = true;
+        metricsEmitter.emit('snapshot', key, Date.now() - start, { hasError: false, cached: false });
+      }
       cachedUnsubscribe(key, handleValue, handleError);
       const cached = cache[key];
       if (typeof cached !== 'undefined') {
@@ -299,18 +350,34 @@ export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
       resolve(defaultValue);
     };
     braidClient.data.on('affirm', handleAffirm);
+    const wrappedErrback = (error:Error) => {
+      if (!receivedInitialValue) {
+        receivedInitialValue = true;
+        metricsEmitter.emit('snapshot', key, Date.now() - start, { hasError: true, cached: false, error: error.message });
+      }
+      return handleError(error);
+    };
+    wrappedErrbacks.set(handleError, wrappedErrback);
     let errbackSet = errbackMap.get(key);
     if (!errbackSet) {
       errbackSet = new Set();
       errbackMap.set(key, errbackSet);
     }
-    errbackSet.add(handleError);
+    errbackSet.add(wrappedErrback);
+    const wrappedCallback = (value:any) => {
+      if (!receivedInitialValue && (typeof value !== 'undefined' || affirmed[key] === true)) {
+        receivedInitialValue = true;
+        metricsEmitter.emit('snapshot', key, Date.now() - start, { hasError: false, cached: false });
+      }
+      return handleValue(value);
+    };
+    wrappedCallbacks.set(handleValue, wrappedCallback);
     let callbackSet = callbackMap.get(key);
     if (callbackSet) {
-      callbackSet.add(handleValue);
+      callbackSet.add(wrappedCallback);
       return;
     }
-    callbackSet = new Set([handleValue]);
+    callbackSet = new Set([wrappedCallback]);
     callbackMap.set(key, callbackSet);
     subscribeWithErrorHandler(key);
   });
