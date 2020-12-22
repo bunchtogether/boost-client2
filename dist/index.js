@@ -63,15 +63,19 @@ const _flush = async () => { // eslint-disable-line no-underscore-dangle
   await AsyncStorage.multiSet(setQueue);
 };
 
+const loadQueue = [];
+
 const loadAsync = async () => {
   const keys = await AsyncStorage.getAllKeys();
   const pairs = await AsyncStorage.multiGet(keys);
   const insertions = [];
+  const keyStringsToRemove = [];
   for (const [keyString, value] of pairs) {
     if (keyString.slice(0, 2) !== '@b') {
       continue;
     }
     const key = keyString.slice(2);
+    keyStringsToRemove.push(keyString);
     if (cache[key]) {
       continue;
     }
@@ -81,6 +85,8 @@ const loadAsync = async () => {
   await new Promise((resolve) => setImmediate(resolve));
   braidClient.data.on('affirm', (key       ) => {
     affirmed[key] = true;
+    cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
+    flush();
   });
   braidClient.data.on('set', (key       ) => {
     affirmed[key] = true;
@@ -92,6 +98,7 @@ const loadAsync = async () => {
     cacheMap.set(`@b${key}`, undefined);
     flush();
   });
+  await AsyncStorage.multiRemove(keyStringsToRemove);
 };
 
 const loadSync = () => {
@@ -119,6 +126,8 @@ const loadSync = () => {
   setImmediate(() => {
     braidClient.data.on('affirm', (key       ) => {
       affirmed[key] = true;
+      cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
+      flush();
     });
     braidClient.data.on('set', (key) => {
       affirmed[key] = true;
@@ -159,16 +168,29 @@ braidClient.data.on('delete', (key       ) => {
   }
 });
 
+let isLoaded = false;
+
 if (window && window.localStorage) {
   const start = Date.now();
   loadSync();
   metricsEmitter.emit('load', Date.now() - start, { hasError: false });
+  isLoaded = true;
 } else {
   const start = Date.now();
   loadAsync().then(() => {
     metricsEmitter.emit('load', Date.now() - start, { hasError: false });
+    isLoaded = true;
+    for (const [key, callback, errback, skipInitialCallback] of loadQueue) {
+      cachedSubscribe(key, callback, errback, skipInitialCallback);
+    }
+    loadQueue.length = 0;
   }).catch((error      ) => {
     metricsEmitter.emit('load', Date.now() - start, { hasError: true, error: error.message });
+    isLoaded = true;
+    for (const [key, callback, errback, skipInitialCallback] of loadQueue) {
+      cachedSubscribe(key, callback, errback, skipInitialCallback);
+    }
+    loadQueue.length = 0;
   });
 }
 
@@ -201,7 +223,12 @@ export const cachedValue = (key         ) => { // eslint-disable-line consistent
 const wrappedCallbacks = new Map();
 const wrappedErrbacks = new Map();
 
+
 export const cachedSubscribe = (key        , callback               , errback                  , skipInitialCallback           = false) => {
+  if (!isLoaded) {
+    loadQueue.push([key, callback, errback, skipInitialCallback]);
+    return;
+  }
   let callbackSet = callbackMap.get(key);
   const errbackSet = errbackMap.get(key);
   const start = Date.now();
