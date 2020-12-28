@@ -2,7 +2,7 @@
 
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { List } from 'immutable';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
@@ -39,7 +39,11 @@ const getName = (id:string, parameters?:Object = {}) => {
 
 export default (id?: string, parameters?:Object) => {
   const [value, setValue] = useState(typeof id === 'string' ? parse(cachedValue(getName(id, parameters))) : undefined);
+  const initialCallbackRef = useRef(!!value);
+
   useEffect(() => {
+    const skipInitialCallback = initialCallbackRef.current;
+    initialCallbackRef.current = false;
     if (typeof id !== 'string') {
       setValue(undefined);
       return;
@@ -48,7 +52,7 @@ export default (id?: string, parameters?:Object) => {
     const handleValue = (v:any) => {
       setValue(parse(v));
     };
-    cachedSubscribe(name, handleValue);
+    cachedSubscribe(name, handleValue, undefined, skipInitialCallback);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };

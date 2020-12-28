@@ -1,6 +1,6 @@
 //      
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Map } from 'immutable';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
 
@@ -15,7 +15,11 @@ const getName = (source       , target       ) => `tags/${source}/${target}`;
 
 export default (source         , target         ) => {
   const [value, setValue] = useState(typeof source === 'string' && typeof target === 'string' ? parse(cachedValue(getName(source, target))) : undefined);
+  const initialCallbackRef = useRef(!!value);
+
   useEffect(() => {
+    const skipInitialCallback = initialCallbackRef.current;
+    initialCallbackRef.current = false;
     if (typeof source !== 'string' || typeof target !== 'string') {
       setValue(undefined);
       return;
@@ -24,7 +28,7 @@ export default (source         , target         ) => {
     const handleValue = (v    ) => {
       setValue(parse(v));
     };
-    cachedSubscribe(name, handleValue);
+    cachedSubscribe(name, handleValue, undefined, skipInitialCallback);
     return () => { // eslint-disable-line consistent-return
       cachedUnsubscribe(name, handleValue);
     };
