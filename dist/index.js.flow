@@ -353,7 +353,7 @@ export const cachedSnapshot = async (key:string, defaultValue?: any):Promise<any
       cached: true,
       webSocketWait: 0,
     });
-    if (typeof cached !== 'undefined') {
+    if (typeof cached === 'undefined') {
       return defaultValue;
     }
     return cached;

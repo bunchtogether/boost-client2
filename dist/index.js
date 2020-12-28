@@ -353,7 +353,7 @@ export const cachedSnapshot = async (key       , defaultValue      )            
       cached: true,
       webSocketWait: 0,
     });
-    if (typeof cached !== 'undefined') {
+    if (typeof cached === 'undefined') {
       return defaultValue;
     }
     return cached;
