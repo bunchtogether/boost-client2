@@ -39,13 +39,15 @@ const getName = (id:string, parameters?:Object = {}) => {
 
 export default (id?: string, parameters?:Object) => {
   const [value, setValue] = useState(typeof id === 'string' ? parse(cachedValue(getName(id, parameters))) : undefined);
-  const initialCallbackRef = useRef(!!value);
+  const initialCallbackRef = useRef(typeof value !== 'undefined' || typeof id !== 'string');
 
   useEffect(() => {
     const skipInitialCallback = initialCallbackRef.current;
     initialCallbackRef.current = false;
     if (typeof id !== 'string') {
-      setValue(undefined);
+      if (!skipInitialCallback) {
+        setValue(undefined);
+      }
       return;
     }
     const name = getName(id, parameters);

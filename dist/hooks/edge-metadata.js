@@ -17,13 +17,15 @@ export default (parent         , child         , metadataPath              ) => 
   const path = ['metadata'].concat(metadataPath);
 
   const [value, setValue] = useState(typeof parent === 'string' && typeof child === 'string' ? parse(cachedValue(getName(parent, child)), path) : undefined);
-  const initialCallbackRef = useRef(!!value);
+  const initialCallbackRef = useRef(typeof value !== 'undefined' || typeof parent !== 'string' || typeof child !== 'string');
 
   useEffect(() => {
     const skipInitialCallback = initialCallbackRef.current;
     initialCallbackRef.current = false;
     if (typeof parent !== 'string' || typeof child !== 'string') {
-      setValue(undefined);
+      if (!skipInitialCallback) {
+        setValue(undefined);
+      }
       return;
     }
     const name = getName(parent, child);

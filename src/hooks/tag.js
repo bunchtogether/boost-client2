@@ -15,13 +15,15 @@ const getName = (source:string, target:string) => `tags/${source}/${target}`;
 
 export default (source?: string, target?: string) => {
   const [value, setValue] = useState(typeof source === 'string' && typeof target === 'string' ? parse(cachedValue(getName(source, target))) : undefined);
-  const initialCallbackRef = useRef(!!value);
+  const initialCallbackRef = useRef(typeof value !== 'undefined' || typeof source !== 'string' || typeof target !== 'string');
 
   useEffect(() => {
     const skipInitialCallback = initialCallbackRef.current;
     initialCallbackRef.current = false;
     if (typeof source !== 'string' || typeof target !== 'string') {
-      setValue(undefined);
+      if (!skipInitialCallback) {
+        setValue(undefined);
+      }
       return;
     }
     const name = getName(source, target);

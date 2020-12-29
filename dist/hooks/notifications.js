@@ -28,13 +28,15 @@ const getName = (teamId       , ids                       , parameters         =
 
 export default (teamId       , ids                       , parameters        ) => {
   const [value, setValue] = useState(typeof ids === 'string' || (Array.isArray(ids) && ids.length > 0) ? parse(cachedValue(getName(teamId, ids, parameters))) : undefined);
-  const initialCallbackRef = useRef(!!value);
+  const initialCallbackRef = useRef(typeof value !== 'undefined' || !(typeof ids === 'string' || (Array.isArray(ids) && ids.length > 0)));
 
   useEffect(() => {
     const skipInitialCallback = initialCallbackRef.current;
     initialCallbackRef.current = false;
-    if (!(typeof ids === 'string' || Array.isArray(ids)) || (Array.isArray(ids) && ids.length === 0)) {
-      setValue(undefined);
+    if (!(typeof ids === 'string' || (Array.isArray(ids) && ids.length > 0))) {
+      if (!skipInitialCallback) {
+        setValue(undefined);
+      }
       return;
     }
     const name = getName(teamId, ids, parameters);

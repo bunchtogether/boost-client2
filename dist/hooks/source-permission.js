@@ -44,13 +44,15 @@ const getName = (ids                       , permission        , parameters     
 
 export default (ids                        , permission         , parameters         ) => {
   const [value, setValue] = useState(typeof permission === 'string' && (typeof ids === 'string' || (Array.isArray(ids) && ids.length > 0)) ? parse(cachedValue(getName(ids, permission, parameters))) : undefined);
-  const initialCallbackRef = useRef(!!value);
+  const initialCallbackRef = useRef(typeof value !== 'undefined' || !(typeof permission === 'string' && (typeof ids === 'string' || (Array.isArray(ids) && ids.length > 0))));
 
   useEffect(() => {
     const skipInitialCallback = initialCallbackRef.current;
     initialCallbackRef.current = false;
-    if (!(typeof ids === 'string' || Array.isArray(ids)) || (Array.isArray(ids) && ids.length === 0) || typeof permission !== 'string') {
-      setValue(undefined);
+    if (!(typeof permission === 'string' && (typeof ids === 'string' || (Array.isArray(ids) && ids.length > 0)))) {
+      if (!skipInitialCallback) {
+        setValue(undefined);
+      }
       return;
     }
 

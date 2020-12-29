@@ -15,13 +15,15 @@ const getName = (sourceId:string, targetId:string) => `p/${sourceId}/${targetId}
 
 export default (sourceId?: string, targetId?: string, permission: string) => {
   const [value, setValue] = useState(typeof sourceId === 'string' && typeof targetId === 'string' ? parse(cachedValue(getName(sourceId, targetId)), permission) : undefined);
-  const initialCallbackRef = useRef(!!value);
+  const initialCallbackRef = useRef(typeof value !== 'undefined' || typeof sourceId !== 'string' || typeof targetId !== 'string');
 
   useEffect(() => {
     const skipInitialCallback = initialCallbackRef.current;
     initialCallbackRef.current = false;
     if (typeof sourceId !== 'string' || typeof targetId !== 'string') {
-      setValue(undefined);
+      if (!skipInitialCallback) {
+        setValue(undefined);
+      }
       return;
     }
     const name = getName(sourceId, targetId);

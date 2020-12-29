@@ -7,6 +7,7 @@ import Client from '@bunchtogether/braid-client';
 import AsyncStorage from '@callstack/async-storage';
 import EventEmitter from 'events';
 
+const unsubscribeMap                     = new Map();
 const callbackMap                                 = new Map();
 const errbackMap                                   = new Map();
 const cache = {};
@@ -59,8 +60,12 @@ const _flush = async () => { // eslint-disable-line no-underscore-dangle
       setQueue.push([key, value]);
     }
   }
-  await AsyncStorage.multiRemove(removeQueue);
-  await AsyncStorage.multiSet(setQueue);
+  if (removeQueue.length > 0) {
+    await AsyncStorage.multiRemove(removeQueue);
+  }
+  if (setQueue.length > 0) {
+    await AsyncStorage.multiSet(setQueue);
+  }
 };
 
 const loadQueue = [];
@@ -229,6 +234,7 @@ export const cachedSubscribe = (key        , callback               , errback   
     loadQueue.push([key, callback, errback, skipInitialCallback]);
     return;
   }
+  unsubscribeMap.delete(key);
   let callbackSet = callbackMap.get(key);
   const errbackSet = errbackMap.get(key);
   const start = Date.now();
@@ -299,6 +305,25 @@ export const cachedSubscribe = (key        , callback               , errback   
   }
 };
 
+let unsubscribeInterval;
+
+const unsubscribeCheck = () => {
+  const now = Date.now();
+  for (const [key, time] of unsubscribeMap) {
+    if (now - time < 10000) {
+      continue;
+    }
+    unsubscribeMap.delete(key);
+    delete affirmed[key];
+    callbackMap.delete(key);
+    braidClient.unsubscribe(key);
+  }
+  if (unsubscribeMap.size === 0) {
+    clearInterval(unsubscribeInterval);
+    unsubscribeInterval = undefined;
+  }
+};
+
 export const cachedUnsubscribe = (key       , callback              , errback                  ) => {
   const errbackSet = errbackMap.get(key);
   if (errbackSet) {
@@ -322,11 +347,13 @@ export const cachedUnsubscribe = (key       , callback              , errback   
   }
   callbackSet.delete(wrappedCallback);
   if (callbackSet.size === 0) {
-    delete affirmed[key];
-    callbackMap.delete(key);
-    braidClient.unsubscribe(key);
+    unsubscribeMap.set(key, Date.now());
+    if (!unsubscribeInterval) {
+      unsubscribeInterval = setInterval(unsubscribeCheck, 5000);
+    }
   }
 };
+
 
 export const getReduxChannel = (key        , defaultValue      )                   => eventChannel((emit          ) => {
   const handleValue = (value     ) => {
@@ -419,6 +446,7 @@ export const snapshot = async (key       , defaultValue      )              => {
       resolve(defaultValue);
     };
     braidClient.data.on('affirm', handleAffirm);
+    unsubscribeMap.delete(key);
     const wrappedErrback = (error      ) => {
       if (!receivedInitialValue) {
         receivedInitialValue = true;
