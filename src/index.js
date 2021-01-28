@@ -30,7 +30,7 @@ braidClient.on('open', () => {
   braidClientOpen = Date.now();
 });
 
-let cacheMap = new Map();
+const cacheMap = new Map();
 let flushPromise = null;
 const flush = () => {
   if (flushPromise) {
@@ -49,61 +49,41 @@ const flush = () => {
 
 const _flush = async () => { // eslint-disable-line no-underscore-dangle
   await new Promise((resolve) => setTimeout(resolve, 5000));
-  const oldCacheMap = cacheMap;
-  cacheMap = new Map();
-  const setQueue = [];
-  const removeQueue = [];
-  for (const [key, value] of oldCacheMap) {
-    if (typeof value === 'undefined') {
-      removeQueue.push(key);
-    } else {
-      setQueue.push([key, value]);
+  requestAnimationFrame(() => {
+    const dump = [[], []];
+    for (const [key, value] of cacheMap) {
+      dump[0].push([key, value]);
     }
-  }
-  if (removeQueue.length > 0) {
-    await Storage.multiRemove(removeQueue);
-  }
-  if (setQueue.length > 0) {
-    await Storage.multiSet(setQueue);
-  }
+    const dumpString = JSON.stringify(dump);
+    Storage.set(dumpString);
+  });
 };
 
 const loadQueue = [];
 
 const loadAsync = async () => {
-  const keys = await Storage.getAllKeys();
-  const pairs = await Storage.multiGet(keys);
-  const insertions = [];
-  const keyStringsToRemove = [];
-  for (const [keyString, value] of pairs) {
-    if (keyString.slice(0, 2) !== '@b') {
-      continue;
-    }
-    const key = keyString.slice(2);
-    keyStringsToRemove.push(keyString);
-    if (cache[key]) {
-      continue;
-    }
-    insertions.push([key, JSON.parse(value)]);
-  }
-  braidClient.data.process([insertions, []]);
+  const dumpString = await Storage.get();
+  const dump = JSON.parse(dumpString);
+  requestAnimationFrame(() => {
+    braidClient.data.process(dump);
+  });
   await new Promise((resolve) => setImmediate(resolve));
   braidClient.data.on('affirm', (key:string) => {
     affirmed[key] = true;
-    cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
+    cacheMap.set(key, braidClient.data.pairs.get(key));
     flush();
   });
   braidClient.data.on('set', (key:string) => {
     affirmed[key] = true;
-    cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
+    cacheMap.set(key, braidClient.data.pairs.get(key));
     flush();
   });
   braidClient.data.on('delete', (key:string) => {
     affirmed[key] = true;
-    cacheMap.set(`@b${key}`, undefined);
+    cacheMap.delete(key);
     flush();
   });
-  await Storage.multiRemove(keyStringsToRemove);
+  await Storage.clear();
 };
 
 braidClient.data.on('set', (key:string, value:any) => {

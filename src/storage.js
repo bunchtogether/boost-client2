@@ -2,9 +2,10 @@
 
 import AsyncStorage from '@callstack/async-storage';
 
+const key = 'boost-client-cache-dump';
+
 const cacheAvailable = self.caches && self.location && self.location.origin;
 const cachePrefix = cacheAvailable ? `${self.location.origin}/` : '';
-const cacheKeyRegExp = new RegExp(`${cachePrefix}(.*)`);
 
 const cachePromise = (async () => {
   if (!cacheAvailable) {
@@ -19,47 +20,31 @@ const cachePromise = (async () => {
   return cache;
 })();
 
-export async function getAllKeys(): Promise<Array<string>> {
+export async function set(dump: string) {
+  console.log('Cache size:', new Blob([dump]).size / (1024 * 1024));
   const cache = await cachePromise;
   if (cache) {
-    return (await cache.keys()).reduce((keys, req) => {
-      const match = req.url.match(cacheKeyRegExp);
-      const boostKey = match ? match[1] : undefined;
-      if (boostKey) {
-        keys.push(boostKey);
-      }
-      return keys;
-    }, []);
+    return cache.put(`${cachePrefix}${key}`, new Response(dump));
   }
-  return AsyncStorage.getAllKeys();
+  return AsyncStorage.setItem(key, dump);
 }
 
-export async function multiGet(keys: Array<string>) {
+export async function get() {
   const cache = await cachePromise;
   if (cache) {
-    return Promise.all(keys.map(async (key) => {
-      const resp = await cache.match(`${cachePrefix}${key}`);
-      if (resp.body) {
-        return resp.text();
-      }
-      return JSON.stringify(null);
-    }));
+    const resp = await cache.match(`${cachePrefix}${key}`);
+    if (resp && resp.body) {
+      return resp.text();
+    }
+    return JSON.stringify([[], []]);
   }
-  return AsyncStorage.multiGet(keys);
+  return AsyncStorage.getItem(key);
 }
 
-export async function multiRemove(keys: Array<string>) {
+export async function clear() {
   const cache = await cachePromise;
   if (cache) {
-    return Promise.all(keys.map((key: string) => cache.delete(`${cachePrefix}${key}`)));
+    return cache.delete(`${cachePrefix}${key}`);
   }
-  return AsyncStorage.multiRemove(keys);
-}
-
-export async function multiSet(pairs: Array<[string, string]>) {
-  const cache = await cachePromise;
-  if (cache) {
-    return Promise.all(pairs.map((pair) => cache.put(`${cachePrefix}${pair[0]}`, new Response(pair[1]))));
-  }
-  return AsyncStorage.multiSet(pairs);
+  return AsyncStorage.removeItem(key);
 }
