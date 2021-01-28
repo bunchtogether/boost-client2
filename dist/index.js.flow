@@ -62,9 +62,7 @@ const loadQueue = [];
 const loadAsync = async () => {
   const dumpString = await Storage.get();
   const dump = JSON.parse(dumpString);
-  requestAnimationFrame(() => {
-    braidClient.data.process(dump);
-  });
+  braidClient.data.process(dump);
   await new Promise((resolve) => setImmediate(resolve));
   braidClient.data.on('affirm', (key:string) => {
     affirmed[key] = true;
