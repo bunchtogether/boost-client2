@@ -38,7 +38,8 @@ export async function get() {
     }
     return JSON.stringify([[], []]);
   }
-  return AsyncStorage.getItem(key);
+  const dump = await AsyncStorage.getItem(key);
+  return dump || JSON.stringify([[], []]);
 }
 
 export async function clear() {
