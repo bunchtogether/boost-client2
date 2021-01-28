@@ -48,7 +48,7 @@ const flush = () => {
 };
 
 const _flush = async () => { // eslint-disable-line no-underscore-dangle
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  await new Promise((resolve) => setTimeout(resolve, 10000));
   requestAnimationFrame(() => {
     const dump = braidClient.data.dump();
     dump[0] = dump[0].filter((x) => cacheSet.has(x[0]));
@@ -61,13 +61,17 @@ const loadQueue = [];
 
 const loadAsync = async () => {
   const dumpString = await Storage.get();
-  const dump = JSON.parse(dumpString);
-  braidClient.data.process(dump);
-  await new Promise((resolve) => setImmediate(resolve));
+  if (typeof dumpString === 'string') {
+    const dump = JSON.parse(dumpString);
+    braidClient.data.process(dump);
+    await new Promise((resolve) => setImmediate(resolve));
+  }
   braidClient.data.on('affirm', (key:string) => {
     affirmed[key] = true;
-    cacheSet.add(key);
-    flush();
+    if (!cacheSet.has(key)) {
+      cacheSet.add(key);
+      flush();
+    }
   });
   braidClient.data.on('set', (key:string) => {
     affirmed[key] = true;
