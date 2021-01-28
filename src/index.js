@@ -4,8 +4,8 @@ import type { EventChannel } from 'redux-saga';
 import { fromJS } from 'immutable';
 import { eventChannel, buffers } from 'redux-saga';
 import Client from '@bunchtogether/braid-client';
-import AsyncStorage from '@callstack/async-storage';
 import EventEmitter from 'events';
+import * as Storage from './storage';
 
 const unsubscribeMap:Map<string, number> = new Map();
 const callbackMap:Map<string, Set<(any) => void>> = new Map();
@@ -61,18 +61,18 @@ const _flush = async () => { // eslint-disable-line no-underscore-dangle
     }
   }
   if (removeQueue.length > 0) {
-    await AsyncStorage.multiRemove(removeQueue);
+    await Storage.multiRemove(removeQueue);
   }
   if (setQueue.length > 0) {
-    await AsyncStorage.multiSet(setQueue);
+    await Storage.multiSet(setQueue);
   }
 };
 
 const loadQueue = [];
 
 const loadAsync = async () => {
-  const keys = await AsyncStorage.getAllKeys();
-  const pairs = await AsyncStorage.multiGet(keys);
+  const keys = await Storage.getAllKeys();
+  const pairs = await Storage.multiGet(keys);
   const insertions = [];
   const keyStringsToRemove = [];
   for (const [keyString, value] of pairs) {
@@ -103,48 +103,7 @@ const loadAsync = async () => {
     cacheMap.set(`@b${key}`, undefined);
     flush();
   });
-  await AsyncStorage.multiRemove(keyStringsToRemove);
-};
-
-const loadSync = () => {
-  const insertions = [];
-  for (const keyString of Object.keys(localStorage)) {
-    if (keyString.slice(0, 2) !== '@b') {
-      continue;
-    }
-    const key = keyString.slice(2);
-    if (cache[key]) {
-      continue;
-    }
-    try {
-      const valueString = localStorage.getItem(keyString);
-      if (!valueString) {
-        continue;
-      }
-      insertions.push([key, JSON.parse(valueString)]);
-    } catch (error) {
-      console.log(`Unable to parse localStorage value for ${key}`);
-      console.error(error);
-    }
-  }
-  braidClient.data.process([insertions, []]);
-  setImmediate(() => {
-    braidClient.data.on('affirm', (key:string) => {
-      affirmed[key] = true;
-      cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
-      flush();
-    });
-    braidClient.data.on('set', (key) => {
-      affirmed[key] = true;
-      cacheMap.set(`@b${key}`, JSON.stringify(braidClient.data.pairs.get(key)));
-      flush();
-    });
-    braidClient.data.on('delete', (key) => {
-      affirmed[key] = true;
-      cacheMap.set(`@b${key}`, undefined);
-      flush();
-    });
-  });
+  await Storage.multiRemove(keyStringsToRemove);
 };
 
 braidClient.data.on('set', (key:string, value:any) => {
@@ -174,30 +133,22 @@ braidClient.data.on('delete', (key:string) => {
 });
 
 let isLoaded = false;
-
-if (window && window.localStorage) {
-  const start = Date.now();
-  loadSync();
-  metricsEmitter.emit('load', Date.now() - start, { hasError: false });
+const loadStart = Date.now();
+loadAsync().then(() => {
+  metricsEmitter.emit('load', Date.now() - loadStart, { hasError: false });
   isLoaded = true;
-} else {
-  const start = Date.now();
-  loadAsync().then(() => {
-    metricsEmitter.emit('load', Date.now() - start, { hasError: false });
-    isLoaded = true;
-    for (const [key, callback, errback, skipInitialCallback] of loadQueue) {
-      cachedSubscribe(key, callback, errback, skipInitialCallback);
-    }
-    loadQueue.length = 0;
-  }).catch((error:Error) => {
-    metricsEmitter.emit('load', Date.now() - start, { hasError: true, error: error.message });
-    isLoaded = true;
-    for (const [key, callback, errback, skipInitialCallback] of loadQueue) {
-      cachedSubscribe(key, callback, errback, skipInitialCallback);
-    }
-    loadQueue.length = 0;
-  });
-}
+  for (const [key, callback, errback, skipInitialCallback] of loadQueue) {
+    cachedSubscribe(key, callback, errback, skipInitialCallback);
+  }
+  loadQueue.length = 0;
+}).catch((error:Error) => {
+  metricsEmitter.emit('load', Date.now() - loadStart, { hasError: true, error: error.message });
+  isLoaded = true;
+  for (const [key, callback, errback, skipInitialCallback] of loadQueue) {
+    cachedSubscribe(key, callback, errback, skipInitialCallback);
+  }
+  loadQueue.length = 0;
+});
 
 const subscribeWithErrorHandler = (key:string) => {
   braidClient.subscribe(key).catch((error) => {
