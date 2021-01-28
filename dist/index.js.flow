@@ -30,7 +30,7 @@ braidClient.on('open', () => {
   braidClientOpen = Date.now();
 });
 
-const cacheMap = new Map();
+const cacheSet = new Set();
 let flushPromise = null;
 const flush = () => {
   if (flushPromise) {
@@ -50,10 +50,8 @@ const flush = () => {
 const _flush = async () => { // eslint-disable-line no-underscore-dangle
   await new Promise((resolve) => setTimeout(resolve, 5000));
   requestAnimationFrame(() => {
-    const dump = [[], []];
-    for (const [key, value] of cacheMap) {
-      dump[0].push([key, value]);
-    }
+    const dump = braidClient.data.dump();
+    dump[0] = dump[0].filter((x) => cacheSet.has(x[0]));
     const dumpString = JSON.stringify(dump);
     Storage.set(dumpString);
   });
@@ -70,17 +68,17 @@ const loadAsync = async () => {
   await new Promise((resolve) => setImmediate(resolve));
   braidClient.data.on('affirm', (key:string) => {
     affirmed[key] = true;
-    cacheMap.set(key, braidClient.data.pairs.get(key));
+    cacheSet.add(key);
     flush();
   });
   braidClient.data.on('set', (key:string) => {
     affirmed[key] = true;
-    cacheMap.set(key, braidClient.data.pairs.get(key));
+    cacheSet.add(key);
     flush();
   });
   braidClient.data.on('delete', (key:string) => {
     affirmed[key] = true;
-    cacheMap.delete(key);
+    cacheSet.delete(key);
     flush();
   });
   await Storage.clear();
@@ -423,4 +421,3 @@ export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
 export const triggerDelete = (key:string) => {
   braidClient.data.delete(key);
 };
-
