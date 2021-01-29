@@ -83,7 +83,6 @@ const loadAsync = async () => {
     cacheSet.delete(key);
     flush();
   });
-  await Storage.clear();
 };
 
 braidClient.data.on('set', (key       , value    ) => {

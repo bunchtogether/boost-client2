@@ -9,10 +9,10 @@ const cachePrefix = cacheAvailable ? `${self.location.origin}/` : '';
 
 const cachePromise = (async () => {
   if (!cacheAvailable) {
-    console.log(`Using AsyncStorage for Boost client cache`);  
+    console.log('Using AsyncStorage for Boost client cache');
     return undefined;
   }
-  console.log(`Using Cache API for Boost client cache`);  
+  console.log('Using Cache API for Boost client cache');
   let cache;
   try {
     cache = await caches.open('boost-client-cache');
@@ -24,8 +24,8 @@ const cachePromise = (async () => {
 
 export async function set(dump: string) {
   const size = Math.round(dump.length / 1024 / 1024 * 100) / 100;
-  if(size > 4) {
-    console.log(`Warning ${size} MB Boost client cache might exceed device limits`);  
+  if (size > 4) {
+    console.log(`Warning ${size} MB Boost client cache might exceed device limits`);
   }
   const cache = await cachePromise;
   if (cache) {
@@ -40,24 +40,22 @@ export async function get() {
     const resp = await cache.match(`${cachePrefix}${key}`);
     if (resp && resp.body) {
       const dumpString = await resp.text();
-      if(typeof dumpString === 'string') {
+      if (typeof dumpString === 'string') {
         const size = Math.round(dumpString.length / 1024 / 1024 * 100) / 100;
         console.log(`Loading ${size} MB Boost client cache`);
         return dumpString;
-      } else {
-        return null;
       }
+      return null;
     }
     return null;
   }
   const dumpString = await AsyncStorage.getItem(key);
-  if(typeof dumpString === 'string') {
+  if (typeof dumpString === 'string') {
     const size = Math.round(dumpString.length / 1024 / 1024 * 100) / 100;
     console.log(`Loading ${size} MB Boost client cache`);
     return dumpString;
-  } else {
-    return null;
   }
+  return null;
 }
 
 export async function clear() {

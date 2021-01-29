@@ -61,16 +61,16 @@ const loadQueue = [];
 
 const loadAsync = async () => {
   const dumpString = await Storage.get();
-  if(typeof dumpString === 'string') {
+  if (typeof dumpString === 'string') {
     const dump = JSON.parse(dumpString);
     braidClient.data.process(dump);
-    await new Promise((resolve) => setImmediate(resolve));    
+    await new Promise((resolve) => setImmediate(resolve));
   }
   braidClient.data.on('affirm', (key:string) => {
     affirmed[key] = true;
-    if(!cacheSet.has(key)) {
+    if (!cacheSet.has(key)) {
       cacheSet.add(key);
-      flush();      
+      flush();
     }
   });
   braidClient.data.on('set', (key:string) => {
@@ -83,7 +83,6 @@ const loadAsync = async () => {
     cacheSet.delete(key);
     flush();
   });
-  await Storage.clear();
 };
 
 braidClient.data.on('set', (key:string, value:any) => {
