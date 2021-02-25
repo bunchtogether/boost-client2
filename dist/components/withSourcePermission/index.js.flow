@@ -18,6 +18,7 @@ const parameterNames = new Set([
   'readPermission',
   'hasChild',
   'hasParent',
+  'onlineInTeam',
   'parentEdgeContains',
   'typesInTree',
 ]);
@@ -36,6 +37,7 @@ type Parameters = {
   readPermission?:boolean,
   hasChild?: string,
   hasParent?: string,
+  onlineInTeam?: string,
   parentEdgeContains?: string,
   propertyName?: string,
   permission?: string,

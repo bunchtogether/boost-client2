@@ -18,6 +18,7 @@ const parameterNames = new Set([
   'readPermission',
   'hasChild',
   'hasParent',
+  'onlineInTeam',
   'parentEdgeContains',
   'typesInTree',
 ]);
@@ -36,6 +37,7 @@ const getParameters = (...args              )            => pick(Object.assign({
                           
                     
                      
+                        
                               
                         
                       

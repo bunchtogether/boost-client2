@@ -17,6 +17,7 @@ const parameterNames = [
   'readPermission',
   'hasChild',
   'hasParent',
+  'onlineInTeam',
   'parentEdgeContains',
   'typesInTree',
 ];
