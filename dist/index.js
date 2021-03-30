@@ -22,6 +22,8 @@ export class BoostCatastrophicError extends Error {
   }
 }
 
+export const flushIgnorePrefixes             = new Set();
+
 export const braidClient = new Client();
 
 let braidClientOpen = Date.now();
@@ -32,9 +34,14 @@ braidClient.on('open', () => {
 
 const cacheSet = new Set();
 let flushPromise = null;
-const flush = () => {
+const flush = (key       ) => {
   if (flushPromise) {
     return flushPromise;
+  }
+  for (const prefix of flushIgnorePrefixes) {
+    if (key.startsWith(prefix)) {
+      return; // eslint-disable-line  consistent-return
+    }
   }
   flushPromise = _flush();
   flushPromise.then(() => {
@@ -70,18 +77,18 @@ const loadAsync = async () => {
     affirmed[key] = true;
     if (!cacheSet.has(key)) {
       cacheSet.add(key);
-      flush();
+      flush(key);
     }
   });
   braidClient.data.on('set', (key       ) => {
     affirmed[key] = true;
     cacheSet.add(key);
-    flush();
+    flush(key);
   });
   braidClient.data.on('delete', (key       ) => {
     affirmed[key] = true;
     cacheSet.delete(key);
-    flush();
+    flush(key);
   });
 };
 
