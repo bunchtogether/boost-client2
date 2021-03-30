@@ -55,7 +55,7 @@ const flush = (key:string) => {
 };
 
 const _flush = async () => { // eslint-disable-line no-underscore-dangle
-  await new Promise((resolve) => setTimeout(resolve, 10000));
+  await new Promise((resolve) => setTimeout(resolve, 30000));
   requestAnimationFrame(() => {
     const dump = braidClient.data.dump();
     dump[0] = dump[0].filter((x) => cacheSet.has(x[0]));
