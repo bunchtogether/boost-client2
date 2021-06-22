@@ -1,11 +1,11 @@
 {
   "name": "@bunchtogether/boost-client",
-  "version": "1.1.26",
+  "version": "1.1.27",
   "main": "dist/index.js",
   "repository": "https://github.com/bunchtogether/boost-client2.git",
   "author": "johnwehr@bunchtogether.com",
   "scripts": {
-    "build:esm": "cross-env BABEL_ENV=esm babel ./src --out-dir ./dist --keep-file-extension --source-maps && flow-copy-source ./src ./dist",
+    "build:esm": "cross-env BABEL_ENV=esm babel ./src --out-dir ./dist --source-maps && flow-copy-source ./src ./dist",
     "build": "rm -rf ./dist && mkdir -p ./dist && yarn build:esm",
     "flow-typed": "./node_modules/.bin/flow-typed install --overwrite",
     "test": "yarn lint && yarn test:js",
@@ -32,7 +32,7 @@
     "@babel/cli": "^7.14.5",
     "@babel/core": "^7.14.6",
     "@babel/plugin-proposal-class-properties": "^7.14.5",
-    "@babel/plugin-syntax-jsx": "^7.14.5",
+    "@babel/plugin-transform-react-jsx": "^7.14.5",
     "@babel/plugin-transform-flow-strip-types": "^7.14.5",
     "babel-eslint": "^10.1.0",
     "codecov": "^3.8.2",

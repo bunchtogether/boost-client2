@@ -5,26 +5,27 @@ import { isEmpty, pick, omit } from 'lodash';
 import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
-const parameterNames = new Set(['sort', 'order', 'limit', 'offset', 'filter', 'type', 'query', 'hasChild', 'hasParent']);
+const parameterNames = new Set(['limit', 'offset', 'startDate', 'endDate', 'query', 'hasParent']);
 
 const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);
 
 export default ((parameters = {}) => function wrap(Component) {
   const getName = props => {
-    const id = parameters.idName ? props[parameters.idName] : props.id;
-    const permission = props.permission || parameters.permission;
+    const id = parameters.idName ? props[parameters.idName] : props.id; //
 
-    if (!id || !permission) {
+    const teamId = parameters.teamIdName ? props[parameters.teamIdName] : props.teamId;
+
+    if (!id || !teamId) {
       return undefined;
     }
 
     const options = getParameters(parameters, props);
 
     if (isEmpty(options)) {
-      return `p/${permission}/${id}`;
+      return `keiser/${teamId}/${id}`;
     }
 
-    return `p/${permission}/${id}?${queryString.stringify(options)}`;
+    return `keiser/${teamId}/${id}?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component {
@@ -34,7 +35,7 @@ export default ((parameters = {}) => function wrap(Component) {
       if (name !== prevState.name) {
         return {
           name,
-          sources: cachedValue(name)
+          keiser: cachedValue(name)
         };
       }
 
@@ -46,14 +47,14 @@ export default ((parameters = {}) => function wrap(Component) {
 
       _defineProperty(this, "handleUpdate", value => {
         this.setState({
-          sources: value
+          keiser: value
         });
       });
 
       const name = getName(props);
       this.state = {
         name,
-        sources: cachedValue(name)
+        keiser: cachedValue(name)
       };
     }
 
@@ -76,7 +77,7 @@ export default ((parameters = {}) => function wrap(Component) {
         }
       }
 
-      if (this.state.sources !== nextState.sources) {
+      if (this.state.keiser !== nextState.keiser) {
         return true;
       }
 
@@ -106,8 +107,8 @@ export default ((parameters = {}) => function wrap(Component) {
 
     render() {
       const props = omit(this.props, [...parameterNames]);
-      props[parameters.propertyName || 'sources'] = this.state.sources;
-      return <Component {...props} />;
+      props[parameters.propertyName || 'keiser'] = this.state.keiser;
+      return /*#__PURE__*/React.createElement(Component, props);
     }
 
   }
@@ -115,4 +116,4 @@ export default ((parameters = {}) => function wrap(Component) {
   hoistNonReactStatics(NewComponent, Component);
   return NewComponent;
 });
-//# sourceMappingURL=index.jsx.map
+//# sourceMappingURL=index.js.map

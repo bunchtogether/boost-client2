@@ -5,29 +5,29 @@ import { isEmpty, pick, omit } from 'lodash';
 import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
-const parameterNames = new Set(['limit', 'offset', 'filterNamed', 'query']);
+const parameterNames = new Set(['depth', 'sort', 'order', 'limit', 'offset', 'filter', 'edgeContains', 'hasChild', 'hasParent', 'type', 'typesInTree', 'query', 'includeInactive']);
 
 const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);
 
 export default ((parameters = {}) => function wrap(Component) {
   const getName = props => {
     const id = parameters.idName ? props[parameters.idName] : props.id;
-    const ids = parameters.idsName ? props[parameters.idsName] : props.ids;
-    const teamId = parameters.teamIdName ? props[parameters.teamIdName] : props.teamId;
-    const hasIds = Array.isArray(ids) && ids.length > 0;
 
-    if (!id && !hasIds || !teamId) {
+    if (!id) {
       return undefined;
     }
 
-    const nodeIds = hasIds ? ids.join('/') : id;
     const options = getParameters(parameters, props);
 
-    if (isEmpty(options)) {
-      return `notifications/${teamId}/${nodeIds}`;
+    if (options.type && typeof options.type === 'string') {
+      options.type = options.type.split(',');
     }
 
-    return `notifications/${teamId}/${nodeIds}?${queryString.stringify(options)}`;
+    if (isEmpty(options)) {
+      return `n/${id}/ancestors`;
+    }
+
+    return `n/${id}/ancestors?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component {
@@ -37,7 +37,7 @@ export default ((parameters = {}) => function wrap(Component) {
       if (name !== prevState.name) {
         return {
           name,
-          notifications: cachedValue(name)
+          ancestors: cachedValue(name)
         };
       }
 
@@ -49,14 +49,14 @@ export default ((parameters = {}) => function wrap(Component) {
 
       _defineProperty(this, "handleUpdate", value => {
         this.setState({
-          notifications: value
+          ancestors: value
         });
       });
 
       const name = getName(props);
       this.state = {
         name,
-        notifications: cachedValue(name)
+        ancestors: cachedValue(name)
       };
     }
 
@@ -79,7 +79,7 @@ export default ((parameters = {}) => function wrap(Component) {
         }
       }
 
-      if (this.state.notifications !== nextState.notifications) {
+      if (this.state.ancestors !== nextState.ancestors) {
         return true;
       }
 
@@ -109,8 +109,8 @@ export default ((parameters = {}) => function wrap(Component) {
 
     render() {
       const props = omit(this.props, [...parameterNames]);
-      props[parameters.propertyName || 'notifications'] = this.state.notifications;
-      return <Component {...props} />;
+      props[parameters.propertyName || 'ancestors'] = this.state.ancestors;
+      return /*#__PURE__*/React.createElement(Component, props);
     }
 
   }
@@ -118,4 +118,4 @@ export default ((parameters = {}) => function wrap(Component) {
   hoistNonReactStatics(NewComponent, Component);
   return NewComponent;
 });
-//# sourceMappingURL=index.jsx.map
+//# sourceMappingURL=index.js.map

@@ -1,19 +1,23 @@
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-import { Set as ImmutableSet } from 'immutable';
 import * as React from 'react';
+import { isEmpty, pick, omit } from 'lodash';
+import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+const parameterNames = new Set(['parentId', 'parentType', 'childId', 'childType', 'contains']);
+
+const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);
+
 export default ((parameters = {}) => function wrap(Component) {
   const getName = props => {
-    const id = parameters.idName ? props[parameters.idName] : props.id;
-    const sourceId = parameters.sourceIdName ? props[parameters.sourceIdName] : props.sourceId;
+    const options = getParameters(parameters, props);
 
-    if (!sourceId || !id) {
+    if (isEmpty(options)) {
       return undefined;
     }
 
-    return `p/${sourceId}/${id}`;
+    return `e?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component {
@@ -23,7 +27,7 @@ export default ((parameters = {}) => function wrap(Component) {
       if (name !== prevState.name) {
         return {
           name,
-          permissions: cachedValue(name)
+          edge: cachedValue(name)
         };
       }
 
@@ -35,14 +39,14 @@ export default ((parameters = {}) => function wrap(Component) {
 
       _defineProperty(this, "handleUpdate", value => {
         this.setState({
-          permissions: value
+          edge: value
         });
       });
 
       const name = getName(props);
       this.state = {
         name,
-        permissions: cachedValue(name)
+        edge: cachedValue(name)
       };
     }
 
@@ -65,12 +69,12 @@ export default ((parameters = {}) => function wrap(Component) {
         }
       }
 
-      if (this.state.permissions !== nextState.permissions) {
+      if (this.state.edge !== nextState.edge) {
         return true;
       }
 
-      const nextPropsKeys = Object.keys(nextProps);
-      const propsKeys = Object.keys(this.props);
+      const nextPropsKeys = Object.keys(nextProps).filter(key => !parameterNames.has(key));
+      const propsKeys = Object.keys(this.props).filter(key => !parameterNames.has(key));
 
       if (nextPropsKeys.length !== propsKeys.length) {
         return true;
@@ -94,10 +98,9 @@ export default ((parameters = {}) => function wrap(Component) {
     }
 
     render() {
-      const props = Object.assign({}, {
-        [parameters.propertyName || 'permissions']: this.state.permissions
-      }, this.props);
-      return <Component {...props} />;
+      const props = omit(this.props, [...parameterNames]);
+      props[parameters.propertyName || 'edge'] = this.state.edge;
+      return /*#__PURE__*/React.createElement(Component, props);
     }
 
   }
@@ -105,4 +108,4 @@ export default ((parameters = {}) => function wrap(Component) {
   hoistNonReactStatics(NewComponent, Component);
   return NewComponent;
 });
-//# sourceMappingURL=index.jsx.map
+//# sourceMappingURL=index.js.map

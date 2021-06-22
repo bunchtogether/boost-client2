@@ -108,7 +108,7 @@ export default ((parameters = {}) => function wrap(Component) {
     render() {
       const props = omit(this.props, [...parameterNames]);
       props[parameters.propertyName || 'schedules'] = this.state.schedules;
-      return <Component {...props} />;
+      return /*#__PURE__*/React.createElement(Component, props);
     }
 
   }
@@ -116,4 +116,4 @@ export default ((parameters = {}) => function wrap(Component) {
   hoistNonReactStatics(NewComponent, Component);
   return NewComponent;
 });
-//# sourceMappingURL=index.jsx.map
+//# sourceMappingURL=index.js.map

@@ -5,27 +5,33 @@ import { isEmpty, pick, omit } from 'lodash';
 import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
-const parameterNames = new Set(['limit', 'offset', 'startDate', 'endDate', 'query', 'hasParent']);
+const parameterNames = new Set(['depth', 'sort', 'order', 'limit', 'offset', 'edgeContains', 'filter', 'type', 'typesInTree', 'typesInTreeWithDepth', 'query', 'includeInactive']);
 
 const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);
 
 export default ((parameters = {}) => function wrap(Component) {
   const getName = props => {
-    const id = parameters.idName ? props[parameters.idName] : props.id; //
+    const id = parameters.idName ? props[parameters.idName] : props.id;
 
-    const teamId = parameters.teamIdName ? props[parameters.teamIdName] : props.teamId;
-
-    if (!id || !teamId) {
+    if (!id) {
       return undefined;
     }
 
     const options = getParameters(parameters, props);
 
-    if (isEmpty(options)) {
-      return `keiser/${teamId}/${id}`;
+    if (parameters.types) {
+      if (!options.typesInTreeWithDepth) {
+        options.typesInTreeWithDepth = JSON.parse(parameters.types);
+      }
+
+      console.warn('Deprecated in components/withTree: "types" is deprecated please use "typesInTreeWithDepth"');
     }
 
-    return `keiser/${teamId}/${id}?${queryString.stringify(options)}`;
+    if (isEmpty(options)) {
+      return `n/${id}/tree`;
+    }
+
+    return `n/${id}/tree?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component {
@@ -35,7 +41,7 @@ export default ((parameters = {}) => function wrap(Component) {
       if (name !== prevState.name) {
         return {
           name,
-          keiser: cachedValue(name)
+          tree: cachedValue(name)
         };
       }
 
@@ -47,14 +53,14 @@ export default ((parameters = {}) => function wrap(Component) {
 
       _defineProperty(this, "handleUpdate", value => {
         this.setState({
-          keiser: value
+          tree: value
         });
       });
 
       const name = getName(props);
       this.state = {
         name,
-        keiser: cachedValue(name)
+        tree: cachedValue(name)
       };
     }
 
@@ -77,7 +83,7 @@ export default ((parameters = {}) => function wrap(Component) {
         }
       }
 
-      if (this.state.keiser !== nextState.keiser) {
+      if (this.state.tree !== nextState.tree) {
         return true;
       }
 
@@ -107,8 +113,8 @@ export default ((parameters = {}) => function wrap(Component) {
 
     render() {
       const props = omit(this.props, [...parameterNames]);
-      props[parameters.propertyName || 'keiser'] = this.state.keiser;
-      return <Component {...props} />;
+      props[parameters.propertyName || 'tree'] = this.state.tree;
+      return /*#__PURE__*/React.createElement(Component, props);
     }
 
   }
@@ -116,4 +122,4 @@ export default ((parameters = {}) => function wrap(Component) {
   hoistNonReactStatics(NewComponent, Component);
   return NewComponent;
 });
-//# sourceMappingURL=index.jsx.map
+//# sourceMappingURL=index.js.map

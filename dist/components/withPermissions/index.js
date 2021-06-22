@@ -1,37 +1,19 @@
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+import { Set as ImmutableSet } from 'immutable';
 import * as React from 'react';
-import { isEmpty, pick, omit } from 'lodash';
-import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
-const parameterNames = new Set(['depth', 'sort', 'order', 'limit', 'offset', 'edgeContains', 'filter', 'type', 'typesInTree', 'typesInTreeWithDepth', 'query', 'includeInactive']);
-
-const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);
-
 export default ((parameters = {}) => function wrap(Component) {
   const getName = props => {
     const id = parameters.idName ? props[parameters.idName] : props.id;
+    const sourceId = parameters.sourceIdName ? props[parameters.sourceIdName] : props.sourceId;
 
-    if (!id) {
+    if (!sourceId || !id) {
       return undefined;
     }
 
-    const options = getParameters(parameters, props);
-
-    if (parameters.types) {
-      if (!options.typesInTreeWithDepth) {
-        options.typesInTreeWithDepth = JSON.parse(parameters.types);
-      }
-
-      console.warn('Deprecated in components/withTree: "types" is deprecated please use "typesInTreeWithDepth"');
-    }
-
-    if (isEmpty(options)) {
-      return `n/${id}/tree`;
-    }
-
-    return `n/${id}/tree?${queryString.stringify(options)}`;
+    return `p/${sourceId}/${id}`;
   };
 
   class NewComponent extends React.Component {
@@ -41,7 +23,7 @@ export default ((parameters = {}) => function wrap(Component) {
       if (name !== prevState.name) {
         return {
           name,
-          tree: cachedValue(name)
+          permissions: cachedValue(name)
         };
       }
 
@@ -53,14 +35,14 @@ export default ((parameters = {}) => function wrap(Component) {
 
       _defineProperty(this, "handleUpdate", value => {
         this.setState({
-          tree: value
+          permissions: value
         });
       });
 
       const name = getName(props);
       this.state = {
         name,
-        tree: cachedValue(name)
+        permissions: cachedValue(name)
       };
     }
 
@@ -83,12 +65,12 @@ export default ((parameters = {}) => function wrap(Component) {
         }
       }
 
-      if (this.state.tree !== nextState.tree) {
+      if (this.state.permissions !== nextState.permissions) {
         return true;
       }
 
-      const nextPropsKeys = Object.keys(nextProps).filter(key => !parameterNames.has(key));
-      const propsKeys = Object.keys(this.props).filter(key => !parameterNames.has(key));
+      const nextPropsKeys = Object.keys(nextProps);
+      const propsKeys = Object.keys(this.props);
 
       if (nextPropsKeys.length !== propsKeys.length) {
         return true;
@@ -112,9 +94,10 @@ export default ((parameters = {}) => function wrap(Component) {
     }
 
     render() {
-      const props = omit(this.props, [...parameterNames]);
-      props[parameters.propertyName || 'tree'] = this.state.tree;
-      return <Component {...props} />;
+      const props = Object.assign({}, {
+        [parameters.propertyName || 'permissions']: this.state.permissions
+      }, this.props);
+      return /*#__PURE__*/React.createElement(Component, props);
     }
 
   }
@@ -122,4 +105,4 @@ export default ((parameters = {}) => function wrap(Component) {
   hoistNonReactStatics(NewComponent, Component);
   return NewComponent;
 });
-//# sourceMappingURL=index.jsx.map
+//# sourceMappingURL=index.js.map

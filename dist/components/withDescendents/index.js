@@ -5,19 +5,29 @@ import { isEmpty, pick, omit } from 'lodash';
 import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
-const parameterNames = new Set(['parentId', 'parentType', 'childId', 'childType', 'contains']);
+const parameterNames = new Set(['depth', 'sort', 'order', 'limit', 'offset', 'filter', 'edgeContains', 'hasChild', 'hasParent', 'type', 'typesInTree', 'query', 'includeInactive']);
 
 const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);
 
 export default ((parameters = {}) => function wrap(Component) {
   const getName = props => {
-    const options = getParameters(parameters, props);
+    const id = parameters.idName ? props[parameters.idName] : props.id;
 
-    if (isEmpty(options)) {
+    if (!id) {
       return undefined;
     }
 
-    return `e?${queryString.stringify(options)}`;
+    const options = getParameters(parameters, props);
+
+    if (options.type && typeof options.type === 'string') {
+      options.type = options.type.split(',');
+    }
+
+    if (isEmpty(options)) {
+      return `n/${id}/descendents`;
+    }
+
+    return `n/${id}/descendents?${queryString.stringify(options)}`;
   };
 
   class NewComponent extends React.Component {
@@ -27,7 +37,7 @@ export default ((parameters = {}) => function wrap(Component) {
       if (name !== prevState.name) {
         return {
           name,
-          edge: cachedValue(name)
+          descendents: cachedValue(name)
         };
       }
 
@@ -39,14 +49,14 @@ export default ((parameters = {}) => function wrap(Component) {
 
       _defineProperty(this, "handleUpdate", value => {
         this.setState({
-          edge: value
+          descendents: value
         });
       });
 
       const name = getName(props);
       this.state = {
         name,
-        edge: cachedValue(name)
+        descendents: cachedValue(name)
       };
     }
 
@@ -69,7 +79,7 @@ export default ((parameters = {}) => function wrap(Component) {
         }
       }
 
-      if (this.state.edge !== nextState.edge) {
+      if (this.state.descendents !== nextState.descendents) {
         return true;
       }
 
@@ -99,8 +109,8 @@ export default ((parameters = {}) => function wrap(Component) {
 
     render() {
       const props = omit(this.props, [...parameterNames]);
-      props[parameters.propertyName || 'edge'] = this.state.edge;
-      return <Component {...props} />;
+      props[parameters.propertyName || 'descendents'] = this.state.descendents;
+      return /*#__PURE__*/React.createElement(Component, props);
     }
 
   }
@@ -108,4 +118,4 @@ export default ((parameters = {}) => function wrap(Component) {
   hoistNonReactStatics(NewComponent, Component);
   return NewComponent;
 });
-//# sourceMappingURL=index.jsx.map
+//# sourceMappingURL=index.js.map

@@ -1,3 +1,5 @@
+function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
+
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 import * as React from 'react';
@@ -174,7 +176,9 @@ export default ((parameters = {
     }
 
     render() {
-      return <Component values={this.state.values} {...this.props} />;
+      return /*#__PURE__*/React.createElement(Component, _extends({
+        values: this.state.values
+      }, this.props));
     }
 
   }
@@ -182,4 +186,4 @@ export default ((parameters = {
   hoistNonReactStatics(NewComponent, Component);
   return NewComponent;
 });
-//# sourceMappingURL=index.jsx.map
+//# sourceMappingURL=index.js.map
