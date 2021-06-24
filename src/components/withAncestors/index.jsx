@@ -47,7 +47,9 @@ type State = {
   ancestors?: List<string>
 };
 
-export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: List<string> }>> {
+type InjectedProps = {| [string]: List<string> | void |};
+
+export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<{| ...Props, ...InjectedProps |}> {
   const getName = (props: Props) => {
     const id = parameters.idName ? props[parameters.idName] : props.id;
     if (!id) {

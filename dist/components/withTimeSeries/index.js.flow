@@ -21,7 +21,7 @@ type Parameters = {
 };
 
 type State = {
-  values: ImmutableMap<string, ImmutableMap<string, List>>
+  values: ImmutableMap<string, ImmutableMap<string, List<number>>>
 };
 
 function isLive(ms: number) {
@@ -29,7 +29,9 @@ function isLive(ms: number) {
   return mins < 10;
 }
 
-export default (parameters: Parameters = { delta: 60, end: Date.now(), machines: [], names: [] }) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: ImmutableMap<string, ImmutableMap<string, List>> }>> {   // eslint-disable-line
+type InjectedProps = {| values: ImmutableMap<string, ImmutableMap<string, List<number>>> | void |};
+
+export default (parameters: Parameters = { delta: 60, end: Date.now(), machines: [], names: [] }) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<{| ...Props, ...InjectedProps |}> {   // eslint-disable-line
   class NewComponent extends React.Component<Props, State> {
     constructor(props: Props) {
       super(props);

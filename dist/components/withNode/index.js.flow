@@ -15,7 +15,9 @@ type State = {
   node?: ImmutableMap<string, *>
 };
 
-export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<$Diff<Props, { [string]: ImmutableMap<string, *> }>> {
+type InjectedProps = {| [string]: ImmutableMap<string, *> | void |};
+
+export default (parameters: Parameters = {}) => function wrap<Props: Object>(Component: React.AbstractComponent<Props>): React.AbstractComponent<{| ...Props, ...InjectedProps |}> {
   const getName = (props: Props) => {
     const id = parameters.idName ? props[parameters.idName] : props.id;
     if (!id) {
