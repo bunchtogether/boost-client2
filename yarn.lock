@@ -436,10 +436,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bunchtogether/braid-client@1.1.47":
-  version "1.1.47"
-  resolved "https://registry.yarnpkg.com/@bunchtogether/braid-client/-/braid-client-1.1.47.tgz#2bfd0dee9059bf1105bd0fc22d50207356fe089e"
-  integrity sha512-ResiCoX5fIV+uKKSu42XurekFFjjaSCvf0SI0q8PaC+oqMUrUgmVstOvzDW1VsDHXQzKgQ0VnjDge7fopQ6wEw==
+"@bunchtogether/braid-client@1.1.48":
+  version "1.1.48"
+  resolved "https://registry.yarnpkg.com/@bunchtogether/braid-client/-/braid-client-1.1.48.tgz#9e04bc3e019852bec7502363b78c1818e0f117ec"
+  integrity sha512-JPROGXgZ63MoABRGsJTcYSDJUeIbVlrfUqONM80l99CzJG5g9AE++Fwl2tE5Oy6ISjjt0uA0ncWugl9TCyEegw==
   dependencies:
     "@bunchtogether/braid-messagepack" "1.1.46"
     isomorphic-ws "^4.0.1"
