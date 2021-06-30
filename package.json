@@ -1,6 +1,6 @@
 {
   "name": "@bunchtogether/boost-client",
-  "version": "1.1.28",
+  "version": "1.1.29",
   "main": "dist/index.js",
   "repository": "https://github.com/bunchtogether/boost-client2.git",
   "author": "johnwehr@bunchtogether.com",
@@ -32,8 +32,8 @@
     "@babel/cli": "^7.14.5",
     "@babel/core": "^7.14.6",
     "@babel/plugin-proposal-class-properties": "^7.14.5",
-    "@babel/plugin-transform-react-jsx": "^7.14.5",
     "@babel/plugin-transform-flow-strip-types": "^7.14.5",
+    "@babel/plugin-transform-react-jsx": "^7.14.5",
     "babel-eslint": "^10.1.0",
     "codecov": "^3.8.2",
     "cross-env": "^7.0.3",
@@ -57,7 +57,7 @@
     "react": "^17.0.2"
   },
   "dependencies": {
-    "@bunchtogether/braid-client": "^1.1.46",
+    "@bunchtogether/braid-client": "1.1.47",
     "@callstack/async-storage": "^2.0.3",
     "hoist-non-react-statics": "^3.3.2",
     "immutable": "^4.0.0-rc.12",
