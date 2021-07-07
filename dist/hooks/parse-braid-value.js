@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
 export default ((name, parse) => {
   const [value, setValue] = useState(typeof name === 'string' ? cachedValue(name) : undefined);
   const initialCallbackRef = useRef(typeof value !== 'undefined' || typeof name !== 'string');

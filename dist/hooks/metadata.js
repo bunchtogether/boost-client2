@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
 
 const getName = (id, path) => `n/${id}/metadata/${path.map(x => encodeURIComponent(x)).join('/')}`;
 

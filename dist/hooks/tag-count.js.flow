@@ -3,7 +3,7 @@
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { useState, useEffect, useRef } from 'react';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
 
 const parameterNames = [
   'type',

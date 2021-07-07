@@ -1,8 +1,7 @@
 import { fromJS } from 'immutable';
 import { eventChannel, buffers } from 'redux-saga';
-import Client from '@bunchtogether/braid-client';
+import Client, { SubscribeError } from '@bunchtogether/braid-client';
 import EventEmitter from 'events';
-import * as Storage from './storage';
 const unsubscribeMap = new Map();
 const callbackMap = new Map();
 const errbackMap = new Map();
@@ -22,73 +21,9 @@ let braidClientOpen = Date.now();
 braidClient.on('open', () => {
   braidClientOpen = Date.now();
 });
-const cacheSet = new Set();
-let flushPromise = null;
-
-const flush = key => {
-  if (flushPromise) {
-    return flushPromise;
-  }
-
-  for (const prefix of flushIgnorePrefixes) {
-    if (key.startsWith(prefix)) {
-      return; // eslint-disable-line  consistent-return
-    }
-  }
-
-  flushPromise = _flush();
-  flushPromise.then(() => {
-    flushPromise = null;
-  });
-  flushPromise.catch(error => {
-    console.error(error);
-    flushPromise = null;
-  });
-  return flushPromise;
-};
-
-const _flush = async () => {
-  // eslint-disable-line no-underscore-dangle
-  await new Promise(resolve => setTimeout(resolve, 30000));
-  requestAnimationFrame(() => {
-    const dump = braidClient.data.dump();
-    dump[0] = dump[0].filter(x => cacheSet.has(x[0]));
-    const dumpString = JSON.stringify(dump);
-    Storage.set(dumpString);
-  });
-};
-
-const loadQueue = [];
-
-const loadAsync = async () => {
-  const dumpString = await Storage.get();
-
-  if (typeof dumpString === 'string') {
-    const dump = JSON.parse(dumpString);
-    braidClient.data.process(dump);
-    await new Promise(resolve => setImmediate(resolve));
-  }
-
-  braidClient.data.on('affirm', key => {
-    affirmed[key] = true;
-
-    if (!cacheSet.has(key)) {
-      cacheSet.add(key);
-      flush(key);
-    }
-  });
-  braidClient.data.on('set', key => {
-    affirmed[key] = true;
-    cacheSet.add(key);
-    flush(key);
-  });
-  braidClient.data.on('delete', key => {
-    affirmed[key] = true;
-    cacheSet.delete(key);
-    flush(key);
-  });
-};
-
+braidClient.data.on('affirm', key => {
+  affirmed[key] = true;
+});
 braidClient.data.on('set', (key, value) => {
   let cached;
 
@@ -120,32 +55,6 @@ braidClient.data.on('delete', key => {
     callback();
   }
 });
-let isLoaded = false;
-const loadStart = Date.now();
-loadAsync().then(() => {
-  metricsEmitter.emit('load', Date.now() - loadStart, {
-    hasError: false
-  });
-  isLoaded = true;
-
-  for (const [key, callback, errback, skipInitialCallback] of loadQueue) {
-    cachedSubscribe(key, callback, errback, skipInitialCallback);
-  }
-
-  loadQueue.length = 0;
-}).catch(error => {
-  metricsEmitter.emit('load', Date.now() - loadStart, {
-    hasError: true,
-    error: error.message
-  });
-  isLoaded = true;
-
-  for (const [key, callback, errback, skipInitialCallback] of loadQueue) {
-    cachedSubscribe(key, callback, errback, skipInitialCallback);
-  }
-
-  loadQueue.length = 0;
-});
 
 const subscribeWithErrorHandler = key => {
   braidClient.subscribe(key).catch(error => {
@@ -157,14 +66,14 @@ const subscribeWithErrorHandler = key => {
       }
     }
 
-    if (error.name === 'SubscribeError') {
+    if (error instanceof SubscribeError) {
       if (error.code === 403) {
-        console.log(`User is not authorized to subscribe to ${key}`);
+        braidClient.logger.warn(`User is not authorized to subscribe to ${key}`); // eslint-disable-line no-console
+      } else {
+        braidClient.logger.error(`Server error when subscribing to ${key}`); // eslint-disable-line no-console
       }
-
-      console.error(`Server error when subscribing to ${key}`);
     } else {
-      console.log(`Error subscribing to ${key}: ${error.message}`);
+      braidClient.logger.error(`Error subscribing to ${key}: ${error.message}`); // eslint-disable-line no-console
     }
 
     braidClient.emit('error', error);
@@ -180,11 +89,6 @@ export const cachedValue = key => {
 const wrappedCallbacks = new Map();
 const wrappedErrbacks = new Map();
 export const cachedSubscribe = (key, callback, errback, skipInitialCallback = false) => {
-  if (!isLoaded) {
-    loadQueue.push([key, callback, errback, skipInitialCallback]);
-    return;
-  }
-
   unsubscribeMap.delete(key);
   let callbackSet = callbackMap.get(key);
   const errbackSet = errbackMap.get(key);

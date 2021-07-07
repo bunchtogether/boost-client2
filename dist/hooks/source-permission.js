@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { List } from 'immutable';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
 const parameterNames = ['sort', 'order', 'limit', 'offset', 'filter', 'type', 'query', 'readPermission', 'hasChild', 'hasParent', 'onlineInTeam', 'parentEdgeContains', 'typesInTree'];
 
 const parse = v => {

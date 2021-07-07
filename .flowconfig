@@ -1,7 +1,7 @@
 [ignore]
 
-.*/node_modules/documentation/*
-.*/components/withTimeSeries/.*
+<PROJECT_ROOT>/src/components/withTimeSeries/.*
+<PROJECT_ROOT>/dist/.*
 
 [include]
 

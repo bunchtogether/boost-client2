@@ -1,7 +1,7 @@
 // @flow
 
 import { useState, useEffect, useRef } from 'react';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
 
 const getName = (id:string, path:Array<string>) => `n/${id}/metadata/${path.map((x) => encodeURIComponent(x)).join('/')}`;
 

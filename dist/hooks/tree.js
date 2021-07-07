@@ -2,7 +2,7 @@ import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { useState, useEffect, useRef } from 'react';
 import { List } from 'immutable';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { braidClient, cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
 const parameterNames = ['depth', 'sort', 'order', 'limit', 'offset', 'edgeContains', 'filter', 'type', 'typesInTree', 'typesInTreeWithDepth', 'query', 'includeInactive'];
 
 const parse = v => {
@@ -25,7 +25,7 @@ const getName = (id, parameters = {}) => {
       options.typesInTreeWithDepth = JSON.parse(parameters.types);
     }
 
-    console.warn('Deprecated in hooks/tree: "types" is deprecated please use "typesInTreeWithDepth"');
+    braidClient.logger.warn('Deprecated in hooks/tree: "types" is deprecated please use "typesInTreeWithDepth"');
   }
 
   return isEmpty(options) ? `n/${id}/tree` : `n/${id}/tree?${queryString.stringify(options)}`;

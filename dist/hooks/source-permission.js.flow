@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { List } from 'immutable';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
 
 const parameterNames = [
   'sort',

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Map } from 'immutable';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
 
 const parse = (v, path) => {
   if (Map.isMap(v)) {
