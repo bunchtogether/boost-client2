@@ -1,7 +1,7 @@
 // @flow
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../index';
 
 
 export default (name?: string, parse:(any) => any) => {

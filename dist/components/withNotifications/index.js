@@ -4,7 +4,7 @@ import * as React from 'react';
 import { isEmpty, pick, omit } from 'lodash';
 import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
 const parameterNames = new Set(['limit', 'offset', 'filterNamed', 'query']);
 
 const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);

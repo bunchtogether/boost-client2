@@ -3,7 +3,7 @@
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import EventEmitter from 'events';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
 
 const parameterNames = [
   'depth',

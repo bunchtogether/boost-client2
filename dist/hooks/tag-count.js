@@ -1,7 +1,7 @@
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { useState, useEffect, useRef } from 'react';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../index';
 const parameterNames = ['type', 'name', 'hasParent'];
 
 const getName = (id, parameters = {}) => {

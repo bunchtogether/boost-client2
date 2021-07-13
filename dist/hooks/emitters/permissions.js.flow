@@ -1,7 +1,7 @@
 // @flow
 
 import EventEmitter from 'events';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
 
 export default class PermissionsEmitter extends EventEmitter {
   name: string | void;

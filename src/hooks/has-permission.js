@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { List } from 'immutable';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../index';
 
 const parse = (v:any, permission:string) => {
   if (List.isList(v)) {

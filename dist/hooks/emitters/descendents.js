@@ -3,7 +3,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import EventEmitter from 'events';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
 const parameterNames = ['depth', 'sort', 'order', 'limit', 'offset', 'filter', 'edgeContains', 'hasChild', 'hasParent', 'type', 'typesInTree', 'query', 'includeInactive'];
 export default class DescendentEmitter extends EventEmitter {
   constructor(id, parameters = {}) {

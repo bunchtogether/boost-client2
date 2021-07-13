@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { List } from 'immutable';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../index';
 
 const parse = (v, permission) => {
   if (List.isList(v)) {

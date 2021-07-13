@@ -6,6 +6,8 @@ import { eventChannel, buffers } from 'redux-saga';
 import Client, { SubscribeError } from '@bunchtogether/braid-client';
 import EventEmitter from 'events';
 
+export { SubscribeError } from '@bunchtogether/braid-client';
+
 const unsubscribeMap:Map<string, number> = new Map();
 const callbackMap:Map<string, Set<(any) => void>> = new Map();
 const errbackMap:Map<string, Set<(Error) => void>> = new Map();
@@ -20,6 +22,7 @@ export class BoostCatastrophicError extends Error {
     this.name = 'BoostCatastrophicError';
   }
 }
+
 
 export const flushIgnorePrefixes:Set<string> = new Set();
 
@@ -90,7 +93,6 @@ export const cachedValue = (key?: string) => { // eslint-disable-line consistent
 
 const wrappedCallbacks = new Map();
 const wrappedErrbacks = new Map();
-
 
 export const cachedSubscribe = (key: string, callback: (any) => void, errback?: (Error) => void, skipInitialCallback?: boolean = false) => {
   unsubscribeMap.delete(key);
@@ -231,7 +233,7 @@ export const getReduxChannel = (key: string, defaultValue?: any):EventChannel<an
   };
 }, buffers.expanding(2));
 
-export const cachedSnapshot = async (key:string, defaultValue?: any):Promise<any> => {
+export const cachedSnapshot = async (key:string, defaultValue?: any) => {
   const cached = cache[key];
   if (typeof cached !== 'undefined' || affirmed[key] === true) {
     metricsEmitter.emit('snapshot', key, 0, {
@@ -247,20 +249,21 @@ export const cachedSnapshot = async (key:string, defaultValue?: any):Promise<any
   return snapshot(key, defaultValue);
 };
 
-export const snapshot = async (key:string, defaultValue?: any):Promise<any> => {
+export const snapshot = async (key:string, defaultValue?: any) => {
   const start = Date.now();
   let receivedInitialValue = false;
   const webSocket = !!braidClient.ws;
-  if (affirmed[key]) {
+  const initialCached = cache[key];
+  if (braidClient.confirmedSubscriptions.has(key) && (typeof initialCached !== 'undefined' || affirmed[key])) {
     metricsEmitter.emit('snapshot', key, Date.now() - start, {
       hasError: false,
       cached: true,
       webSocketWait: 0,
     });
-    if (typeof cache[key] === 'undefined') {
+    if (typeof initialCached === 'undefined') {
       return defaultValue;
     }
-    return cache[key];
+    return initialCached;
   }
   return new Promise((resolve, reject) => {
     const handleValue = (value:any) => {

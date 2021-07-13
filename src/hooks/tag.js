@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Map } from 'immutable';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../index';
 
 const parse = (v:any) => {
   if (Map.isMap(v)) {

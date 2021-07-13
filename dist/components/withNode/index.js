@@ -2,7 +2,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 import * as React from 'react';
 import hoistNonReactStatics from 'hoist-non-react-statics';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
 export default ((parameters = {}) => function wrap(Component) {
   const getName = props => {
     const id = parameters.idName ? props[parameters.idName] : props.id;

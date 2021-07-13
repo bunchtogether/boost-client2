@@ -3,7 +3,7 @@
 import type { Map as ImmutableMap } from 'immutable';
 import * as React from 'react';
 import hoistNonReactStatics from 'hoist-non-react-statics';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../..';
+import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
 
 type Parameters = {
   propertyName?: string,

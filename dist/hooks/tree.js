@@ -2,7 +2,7 @@ import { pick, isEmpty } from 'lodash';
 import queryString from 'query-string';
 import { useState, useEffect, useRef } from 'react';
 import { List } from 'immutable';
-import { braidClient, cachedValue, cachedSubscribe, cachedUnsubscribe } from '..';
+import { braidClient, cachedValue, cachedSubscribe, cachedUnsubscribe } from '../index';
 const parameterNames = ['depth', 'sort', 'order', 'limit', 'offset', 'edgeContains', 'filter', 'type', 'typesInTree', 'typesInTreeWithDepth', 'query', 'includeInactive'];
 
 const parse = v => {

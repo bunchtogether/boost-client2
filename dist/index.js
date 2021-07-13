@@ -2,6 +2,7 @@ import { fromJS } from 'immutable';
 import { eventChannel, buffers } from 'redux-saga';
 import Client, { SubscribeError } from '@bunchtogether/braid-client';
 import EventEmitter from 'events';
+export { SubscribeError } from '@bunchtogether/braid-client';
 const unsubscribeMap = new Map();
 const callbackMap = new Map();
 const errbackMap = new Map();
@@ -271,19 +272,20 @@ export const snapshot = async (key, defaultValue) => {
   const start = Date.now();
   let receivedInitialValue = false;
   const webSocket = !!braidClient.ws;
+  const initialCached = cache[key];
 
-  if (affirmed[key]) {
+  if (braidClient.confirmedSubscriptions.has(key) && (typeof initialCached !== 'undefined' || affirmed[key])) {
     metricsEmitter.emit('snapshot', key, Date.now() - start, {
       hasError: false,
       cached: true,
       webSocketWait: 0
     });
 
-    if (typeof cache[key] === 'undefined') {
+    if (typeof initialCached === 'undefined') {
       return defaultValue;
     }
 
-    return cache[key];
+    return initialCached;
   }
 
   return new Promise((resolve, reject) => {

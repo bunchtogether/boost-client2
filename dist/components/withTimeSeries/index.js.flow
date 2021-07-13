@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Map as ImmutableMap, List, is } from 'immutable';
 import hoistNonReactStatics from 'hoist-non-react-statics';
-import { braidClient } from '../..';
+import { braidClient } from '../../index';
 import { agent } from '../../api-agent';
 
 type DataPoint = {
