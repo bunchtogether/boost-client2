@@ -231,24 +231,43 @@ export const cachedUnsubscribe = (key, callback, errback) => {
     }
   }
 };
-export const getReduxChannel = (key, defaultValue) => eventChannel(emit => {
-  const handleValue = value => {
-    if (typeof value !== 'undefined') {
-      emit(value);
-    } else if (typeof defaultValue !== 'undefined') {
-      emit(defaultValue);
-    }
-  };
+export const getReduxChannel = (key, defaultValue) => {
+  const errorStack = process.env.NODE_ENV !== 'production' ? new Error().stack : undefined;
+  return eventChannel(emit => {
+    const handleValue = value => {
+      if (typeof value !== 'undefined') {
+        emit(value);
+      } else if (typeof defaultValue !== 'undefined') {
+        emit(defaultValue);
+      }
+    };
 
-  const handleError = error => {
-    emit(error);
-  };
+    const handleError = error => {
+      if (process.env.NODE_ENV !== 'production') {
+        if (error instanceof SubscribeError) {
+          const originalStack = error.stack;
 
-  cachedSubscribe(key, handleValue, handleError);
-  return () => {
-    cachedUnsubscribe(key, handleValue, handleError);
-  };
-}, buffers.expanding(2));
+          if (typeof errorStack === 'string') {
+            if (typeof originalStack === 'string') {
+              error.stack = [originalStack.split('\n')[0], ...errorStack.split('\n').slice(1)].join('\n'); // eslint-disable-line no-param-reassign
+            } else {
+              error.stack = [`SubscribeError: Error for ${key}`, ...errorStack.split('\n').slice(1)].join('\n'); // eslint-disable-line no-param-reassign
+            }
+
+            braidClient.logger.errorStack(error);
+          }
+        }
+      }
+
+      emit(error);
+    };
+
+    cachedSubscribe(key, handleValue, handleError);
+    return () => {
+      cachedUnsubscribe(key, handleValue, handleError);
+    };
+  }, buffers.expanding(2));
+};
 export const cachedSnapshot = async (key, defaultValue) => {
   const cached = cache[key];
 
@@ -270,6 +289,7 @@ export const cachedSnapshot = async (key, defaultValue) => {
 };
 export const snapshot = async (key, defaultValue) => {
   const start = Date.now();
+  const errorStack = process.env.NODE_ENV !== 'production' ? new Error().stack : undefined;
   let receivedInitialValue = false;
   const webSocket = !!braidClient.ws;
   const initialCached = cache[key];
@@ -301,6 +321,22 @@ export const snapshot = async (key, defaultValue) => {
     };
 
     const handleError = error => {
+      if (process.env.NODE_ENV !== 'production') {
+        if (error instanceof SubscribeError) {
+          const originalStack = error.stack;
+
+          if (typeof errorStack === 'string') {
+            if (typeof originalStack === 'string') {
+              error.stack = [originalStack.split('\n')[0], ...errorStack.split('\n').slice(1)].join('\n'); // eslint-disable-line no-param-reassign
+            } else {
+              error.stack = [`SubscribeError: Error for ${key}`, ...errorStack.split('\n').slice(1)].join('\n'); // eslint-disable-line no-param-reassign
+            }
+
+            braidClient.logger.errorStack(error);
+          }
+        }
+      }
+
       braidClient.data.removeListener('affirm', handleAffirm);
       cachedUnsubscribe(key, handleValue, handleError);
       reject(error);

@@ -1,40 +1,26 @@
 // @flow
 
-import { useState, useEffect, useRef } from 'react';
 import { Map } from 'immutable';
-import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../index';
+import useParseBraidValue from './parse-braid-value';
 
 const parse = (v:any) => {
   if (Map.isMap(v)) {
-    return v.toJS();
+    return v;
   }
   return undefined;
 };
 
-const getName = (source:string, target:string) => `tags/${source}/${target}`;
+const getName = (source?: string, target?: string) => {
+  if (typeof source !== 'string') {
+    return undefined;
+  }
+  if (typeof target !== 'string') {
+    return undefined;
+  }
+  return `tags/${source}/${target}`;
+};
 
 export default (source?: string, target?: string) => {
-  const [value, setValue] = useState(typeof source === 'string' && typeof target === 'string' ? parse(cachedValue(getName(source, target))) : undefined);
-  const initialCallbackRef = useRef(typeof value !== 'undefined' || typeof source !== 'string' || typeof target !== 'string');
-
-  useEffect(() => {
-    const skipInitialCallback = initialCallbackRef.current;
-    initialCallbackRef.current = false;
-    if (typeof source !== 'string' || typeof target !== 'string') {
-      if (!skipInitialCallback) {
-        setValue(undefined);
-      }
-      return;
-    }
-    const name = getName(source, target);
-    const handleValue = (v:any) => {
-      setValue(parse(v));
-    };
-    cachedSubscribe(name, handleValue, undefined, skipInitialCallback);
-    return () => { // eslint-disable-line consistent-return
-      cachedUnsubscribe(name, handleValue);
-    };
-  }, [source, target]);
-
-  return value;
+  const name = getName(source, target);
+  return useParseBraidValue(name, parse);
 };

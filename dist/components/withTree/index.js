@@ -1,10 +1,13 @@
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 import * as React from 'react';
-import { isEmpty, pick, omit } from 'lodash';
+import isEmpty from 'lodash/isEmpty';
+import pick from 'lodash/pick';
+import omit from 'lodash/omit';
 import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
+import { logSubscribeError } from '../lib/error-logging';
 const parameterNames = new Set(['depth', 'sort', 'order', 'limit', 'offset', 'edgeContains', 'filter', 'type', 'typesInTree', 'typesInTreeWithDepth', 'query', 'includeInactive']);
 
 const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);
@@ -57,6 +60,10 @@ export default ((parameters = {}) => function wrap(Component) {
         });
       });
 
+      _defineProperty(this, "handleError", error => {
+        logSubscribeError(this.state.name, error);
+      });
+
       const name = getName(props);
       this.state = {
         name,
@@ -66,7 +73,7 @@ export default ((parameters = {}) => function wrap(Component) {
 
     async componentDidMount() {
       if (this.state.name) {
-        cachedSubscribe(this.state.name, this.handleUpdate);
+        cachedSubscribe(this.state.name, this.handleUpdate, this.handleError);
       }
     }
 
@@ -75,11 +82,11 @@ export default ((parameters = {}) => function wrap(Component) {
         const name = this.state.name;
 
         if (name) {
-          cachedUnsubscribe(name, this.handleUpdate);
+          cachedUnsubscribe(name, this.handleUpdate, this.handleError);
         }
 
         if (nextState.name) {
-          cachedSubscribe(nextState.name, this.handleUpdate);
+          cachedSubscribe(nextState.name, this.handleUpdate, this.handleError);
         }
       }
 
@@ -107,7 +114,7 @@ export default ((parameters = {}) => function wrap(Component) {
 
     async componentWillUnmount() {
       if (this.state.name) {
-        cachedUnsubscribe(this.state.name, this.handleUpdate);
+        cachedUnsubscribe(this.state.name, this.handleUpdate, this.handleError);
       }
     }
 

@@ -1,10 +1,13 @@
 // @flow
 import type { List } from 'immutable';
 import * as React from 'react';
-import { isEmpty, pick, omit } from 'lodash';
+import isEmpty from 'lodash/isEmpty';
+import pick from 'lodash/pick';
+import omit from 'lodash/omit';
 import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
+import { logSubscribeError } from '../lib/error-logging';
 
 const parameterNames = new Set([
   'limit',
@@ -72,7 +75,7 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
 
     async componentDidMount() {
       if (this.state.name) {
-        cachedSubscribe(this.state.name, this.handleUpdate);
+        cachedSubscribe(this.state.name, this.handleUpdate, this.handleError);
       }
     }
 
@@ -80,10 +83,10 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
       if (this.state.name !== nextState.name) {
         const name = this.state.name;
         if (name) {
-          cachedUnsubscribe(name, this.handleUpdate);
+          cachedUnsubscribe(name, this.handleUpdate, this.handleError);
         }
         if (nextState.name) {
-          cachedSubscribe(nextState.name, this.handleUpdate);
+          cachedSubscribe(nextState.name, this.handleUpdate, this.handleError);
         }
       }
       if (this.state.notifications !== nextState.notifications) {
@@ -105,7 +108,7 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
 
     async componentWillUnmount() {
       if (this.state.name) {
-        cachedUnsubscribe(this.state.name, this.handleUpdate);
+        cachedUnsubscribe(this.state.name, this.handleUpdate, this.handleError);
       }
     }
 
@@ -116,6 +119,10 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
       });
     }
 
+    handleError = (error:Error) => {
+      logSubscribeError(this.state.name, error);
+    }
+    
     render() {
       const props = omit(this.props, [...parameterNames]);
       props[parameters.propertyName || 'notifications'] = this.state.notifications;

@@ -1,4 +1,4 @@
-import parseBraidValueHook from './parse-braid-value';
+import useParseBraidValue from './parse-braid-value';
 
 const parse = v => v;
 
@@ -14,8 +14,8 @@ const getName = (id, path) => {
   return `n/${id}/metadata/${path.map(x => encodeURIComponent(x)).join('/')}`;
 };
 
-export default ((id, path) => {
+export default function useMetadata(id, path) {
   const name = getName(id, path);
-  return parseBraidValueHook(name, parse);
-});
+  return useParseBraidValue(name, parse);
+}
 //# sourceMappingURL=metadata.js.map

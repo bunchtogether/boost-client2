@@ -1,6 +1,6 @@
 // @flow
 
-import parseBraidValueHook from './parse-braid-value';
+import useParseBraidValue from './parse-braid-value';
 
 const parse = (v:any) => v;
 
@@ -14,7 +14,7 @@ const getName = (id?:string, path:Array<string>) => {
   return `n/${id}/metadata/${path.map((x) => encodeURIComponent(x)).join('/')}`;
 };
 
-export default (id?: string, path:Array<string>) => {
+export default function useMetadata(id?: string, path:Array<string>) {
   const name = getName(id, path);
-  return parseBraidValueHook(name, parse);
-};
+  return useParseBraidValue(name, parse);
+}

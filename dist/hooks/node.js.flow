@@ -1,7 +1,7 @@
 // @flow
 
 import { Map } from 'immutable';
-import parseBraidValueHook from './parse-braid-value';
+import useParseBraidValue from './parse-braid-value';
 
 const parse = (v:any) => {
   if (Map.isMap(v)) {
@@ -17,7 +17,7 @@ const getName = (id?:string) => {
   return `n/${id}`;
 };
 
-export default (id?: string) => {
+export default function useNode(id?: string) {
   const name = getName(id);
-  return parseBraidValueHook(name, parse);
-};
+  return useParseBraidValue(name, parse);
+}

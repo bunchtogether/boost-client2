@@ -1,5 +1,5 @@
 import { Map } from 'immutable';
-import parseBraidValueHook from './parse-braid-value';
+import useParseBraidValue from './parse-braid-value';
 
 const parse = v => {
   if (Map.isMap(v)) {
@@ -17,8 +17,8 @@ const getName = id => {
   return `n/${id}`;
 };
 
-export default (id => {
+export default function useNode(id) {
   const name = getName(id);
-  return parseBraidValueHook(name, parse);
-});
+  return useParseBraidValue(name, parse);
+}
 //# sourceMappingURL=node.js.map

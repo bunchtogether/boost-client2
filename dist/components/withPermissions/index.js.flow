@@ -4,6 +4,7 @@ import { Set as ImmutableSet } from 'immutable';
 import * as React from 'react';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
+import { logSubscribeError } from '../lib/error-logging';
 
 type Parameters = {
   propertyName?: string,
@@ -49,7 +50,7 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
 
     async componentDidMount() {
       if (this.state.name) {
-        cachedSubscribe(this.state.name, this.handleUpdate);
+        cachedSubscribe(this.state.name, this.handleUpdate, this.handleError);
       }
     }
 
@@ -57,10 +58,10 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
       if (this.state.name !== nextState.name) {
         const name = this.state.name;
         if (name) {
-          cachedUnsubscribe(name, this.handleUpdate);
+          cachedUnsubscribe(name, this.handleUpdate, this.handleError);
         }
         if (nextState.name) {
-          cachedSubscribe(nextState.name, this.handleUpdate);
+          cachedSubscribe(nextState.name, this.handleUpdate, this.handleError);
         }
       }
       if (this.state.permissions !== nextState.permissions) {
@@ -82,7 +83,7 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
 
     async componentWillUnmount() {
       if (this.state.name) {
-        cachedUnsubscribe(this.state.name, this.handleUpdate);
+        cachedUnsubscribe(this.state.name, this.handleUpdate, this.handleError);
       }
     }
 
@@ -93,6 +94,10 @@ export default (parameters: Parameters = {}) => function wrap<Props: Object>(Com
       });
     }
 
+    handleError = (error:Error) => {
+      logSubscribeError(this.state.name, error);
+    }
+    
     render() {
       const props = Object.assign({}, { [parameters.propertyName || 'permissions']: this.state.permissions }, this.props);
       return <Component {...props} />;

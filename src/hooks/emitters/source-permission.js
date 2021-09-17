@@ -1,6 +1,7 @@
 // @flow
 
-import { pick, isEmpty } from 'lodash';
+import isEmpty from 'lodash/isEmpty';
+import pick from 'lodash/pick';
 import queryString from 'query-string';
 import EventEmitter from 'events';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../';

@@ -3,6 +3,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 import * as React from 'react';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
+import { logSubscribeError } from '../lib/error-logging';
 export default ((parameters = {}) => function wrap(Component) {
   const getName = props => {
     const id = parameters.idName ? props[parameters.idName] : props.id;
@@ -38,6 +39,10 @@ export default ((parameters = {}) => function wrap(Component) {
         });
       });
 
+      _defineProperty(this, "handleError", error => {
+        logSubscribeError(this.state.name, error);
+      });
+
       const name = getName(props);
       this.state = {
         name,
@@ -47,7 +52,7 @@ export default ((parameters = {}) => function wrap(Component) {
 
     async componentDidMount() {
       if (this.state.name) {
-        cachedSubscribe(this.state.name, this.handleUpdate);
+        cachedSubscribe(this.state.name, this.handleUpdate, this.handleError);
       }
     }
 
@@ -56,11 +61,11 @@ export default ((parameters = {}) => function wrap(Component) {
         const name = this.state.name;
 
         if (name) {
-          cachedUnsubscribe(name, this.handleUpdate);
+          cachedUnsubscribe(name, this.handleUpdate, this.handleError);
         }
 
         if (nextState.name) {
-          cachedSubscribe(nextState.name, this.handleUpdate);
+          cachedSubscribe(nextState.name, this.handleUpdate, this.handleError);
         }
       }
 
@@ -88,7 +93,7 @@ export default ((parameters = {}) => function wrap(Component) {
 
     async componentWillUnmount() {
       if (this.state.name) {
-        cachedUnsubscribe(this.state.name, this.handleUpdate);
+        cachedUnsubscribe(this.state.name, this.handleUpdate, this.handleError);
       }
     }
 
