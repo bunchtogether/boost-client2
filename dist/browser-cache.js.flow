@@ -211,7 +211,8 @@ const dequeueSubscriptions = () => {
     return;
   }
   pendingSubscriptionsFlush = true;
-  setImmediate(() => {
+  // $FlowFixMe
+  queueMicrotask(() => {
     pendingSubscriptionsFlush = false;
     _dequeueSubscriptions();
   });
