@@ -33,7 +33,7 @@ export default class PermissionsEmitter extends EventEmitter {
 
   handleUpdate = (value:any) => {
     this.emit('value', value);
-  }
+  };
 
   cleanup() {
     this.emit('cleanup');
