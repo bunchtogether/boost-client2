@@ -28,7 +28,7 @@ const parameterNames = new Set([
 const getParameters = (...args:Array<Object>):Parameters => pick(Object.assign({}, ...args), [...parameterNames]);
 
 type Parameters = {
-  type?: string,
+  type?: string | Array<string>,
   childType?: string,
   sort?: string,
   order?: string,
