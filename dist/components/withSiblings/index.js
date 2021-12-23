@@ -8,7 +8,7 @@ import queryString from 'query-string';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 import { cachedValue, cachedSubscribe, cachedUnsubscribe } from '../../index';
 import { logSubscribeError } from '../lib/error-logging';
-const parameterNames = new Set(['type', 'parentType', 'sort', 'order', 'limit', 'offset', 'filter', 'query', 'hasGrandparent', 'siblingEdgeContains', 'edgeContains']);
+const parameterNames = new Set(['type', 'parentType', 'sort', 'order', 'limit', 'offset', 'filter', 'query', 'hasGrandparent', 'siblingEdgeContains', 'edgeContains', 'includeInactive']);
 
 const getParameters = (...args) => pick(Object.assign({}, ...args), [...parameterNames]);
 

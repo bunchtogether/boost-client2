@@ -22,6 +22,7 @@ const parameterNames = new Set([
   'hasGrandchild',
   'coparentEdgeContains',
   'edgeContains',
+  'includeInactive'
 ]);
 
 const getParameters = (...args:Array<Object>):Parameters => pick(Object.assign({}, ...args), [...parameterNames]);
