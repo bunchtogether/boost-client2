@@ -1,7 +1,7 @@
 // @flow
 
 import { SubscribeError } from '@bunchtogether/braid-client';
-import { braidClient, cachedValue } from './index';
+import { braidClient, cachedValue, flushIgnorePrefixes } from './index';
 
 let db;
 
@@ -164,12 +164,26 @@ const _dequeueStorageOperations = () => { // eslint-disable-line no-underscore-d
 };
 
 braidClient.on('process', ([insertions, deletions]) => {
+  insertionLoop: // eslint-disable-line no-restricted-syntax,no-labels
   for (const item of insertions) {
+    for (const prefix of flushIgnorePrefixes) {
+      if (item[0].startsWith(prefix)) {
+        continue insertionLoop; // eslint-disable-line no-labels
+      }
+    }
     queuedInsertions.push(item);
   }
+
+  deletionLoop: // eslint-disable-line no-restricted-syntax,no-labels
   for (const item of deletions) {
+    for (const prefix of flushIgnorePrefixes) {
+      if (item[1].startsWith(prefix)) {
+        continue deletionLoop; // eslint-disable-line no-labels
+      }
+    }
     queuedDeletions.push(item);
   }
+
   dequeueStorageOperations();
 });
 
