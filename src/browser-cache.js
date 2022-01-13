@@ -44,7 +44,7 @@ const getReadOnlyInsertionsObjectStore = () => {
   if (typeof db === 'undefined') {
     return null;
   }
-  const transaction = db.transaction(['insertions'], 'readonly');
+  const transaction = db.transaction(['insertions'], 'readonly', { durability: 'relaxed' });
   const objectStore = transaction.objectStore('insertions');
   transaction.onabort = (event) => {
     braidClient.logger.error('Read only insertions transaction was aborted');
@@ -61,7 +61,7 @@ const getReadOnlyDeletionsObjectStore = () => {
   if (typeof db === 'undefined') {
     return null;
   }
-  const transaction = db.transaction(['deletions'], 'readonly');
+  const transaction = db.transaction(['deletions'], 'readonly', { durability: 'relaxed' });
   const objectStore = transaction.objectStore('deletions');
   transaction.onabort = (event) => {
     braidClient.logger.error('Read only deletions transaction was aborted');
@@ -78,7 +78,7 @@ const getReadWriteInsertionsObjectStore = () => {
   if (typeof db === 'undefined') {
     return null;
   }
-  const transaction = db.transaction(['insertions'], 'readwrite');
+  const transaction = db.transaction(['insertions'], 'readwrite', { durability: 'relaxed' });
   const objectStore = transaction.objectStore('insertions');
   transaction.onabort = (event) => {
     braidClient.logger.error('Read only insertions transaction was aborted');
@@ -95,7 +95,7 @@ const getReadWriteDeletionsObjectStore = () => {
   if (typeof db === 'undefined') {
     return null;
   }
-  const transaction = db.transaction(['deletions'], 'readwrite');
+  const transaction = db.transaction(['deletions'], 'readwrite', { durability: 'relaxed' });
   const objectStore = transaction.objectStore('deletions');
   transaction.onabort = (event) => {
     braidClient.logger.error('Read only deletions transaction was aborted');
@@ -201,14 +201,14 @@ braidClient.on('error', (error: Error | SubscribeError) => {
     return;
   }
   braidClient.logger.warn(`Removing ${itemKey} from indexedDB after subscribe error`);
-  const insertionTransaction = db.transaction(['insertions'], 'readwrite');
+  const insertionTransaction = db.transaction(['insertions'], 'readwrite', { durability: 'relaxed' });
   const insertionsObjectStore = insertionTransaction.objectStore('insertions');
   const insertionRequest = insertionsObjectStore.delete(itemKey);
   insertionRequest.onerror = function (event) {
     braidClient.logger.error(`Unable to remove insertion ${itemKey} from indexedDB`);
     console.error(event); // eslint-disable-line no-console
   };
-  const deletionTransaction = db.transaction(['deletions'], 'readwrite');
+  const deletionTransaction = db.transaction(['deletions'], 'readwrite', { durability: 'relaxed' });
   const deletionsObjectStore = deletionTransaction.objectStore('deletions');
   const deletionRequest = deletionsObjectStore.delete(itemKey);
   deletionRequest.onerror = function (event) {

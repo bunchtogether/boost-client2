@@ -51,7 +51,9 @@ const getReadOnlyInsertionsObjectStore = () => {
     return null;
   }
 
-  const transaction = db.transaction(['insertions'], 'readonly');
+  const transaction = db.transaction(['insertions'], 'readonly', {
+    durability: 'relaxed'
+  });
   const objectStore = transaction.objectStore('insertions');
 
   transaction.onabort = event => {
@@ -72,7 +74,9 @@ const getReadOnlyDeletionsObjectStore = () => {
     return null;
   }
 
-  const transaction = db.transaction(['deletions'], 'readonly');
+  const transaction = db.transaction(['deletions'], 'readonly', {
+    durability: 'relaxed'
+  });
   const objectStore = transaction.objectStore('deletions');
 
   transaction.onabort = event => {
@@ -93,7 +97,9 @@ const getReadWriteInsertionsObjectStore = () => {
     return null;
   }
 
-  const transaction = db.transaction(['insertions'], 'readwrite');
+  const transaction = db.transaction(['insertions'], 'readwrite', {
+    durability: 'relaxed'
+  });
   const objectStore = transaction.objectStore('insertions');
 
   transaction.onabort = event => {
@@ -114,7 +120,9 @@ const getReadWriteDeletionsObjectStore = () => {
     return null;
   }
 
-  const transaction = db.transaction(['deletions'], 'readwrite');
+  const transaction = db.transaction(['deletions'], 'readwrite', {
+    durability: 'relaxed'
+  });
   const objectStore = transaction.objectStore('deletions');
 
   transaction.onabort = event => {
@@ -256,7 +264,9 @@ braidClient.on('error', error => {
   }
 
   braidClient.logger.warn(`Removing ${itemKey} from indexedDB after subscribe error`);
-  const insertionTransaction = db.transaction(['insertions'], 'readwrite');
+  const insertionTransaction = db.transaction(['insertions'], 'readwrite', {
+    durability: 'relaxed'
+  });
   const insertionsObjectStore = insertionTransaction.objectStore('insertions');
   const insertionRequest = insertionsObjectStore.delete(itemKey);
 
@@ -265,7 +275,9 @@ braidClient.on('error', error => {
     console.error(event); // eslint-disable-line no-console
   };
 
-  const deletionTransaction = db.transaction(['deletions'], 'readwrite');
+  const deletionTransaction = db.transaction(['deletions'], 'readwrite', {
+    durability: 'relaxed'
+  });
   const deletionsObjectStore = deletionTransaction.objectStore('deletions');
   const deletionRequest = deletionsObjectStore.delete(itemKey);
 
