@@ -1,9 +1,10 @@
 import { SubscribeError } from '@bunchtogether/braid-client';
-import { braidClient, cachedValue, flushIgnorePrefixes } from './index';
+import { braidClient, flushIgnorePrefixes } from './index';
 let db;
+const insertionIdSet = new Set();
 
 (() => {
-  const request = self.indexedDB.open('boost-02', 1);
+  const request = self.indexedDB.open('boost-03', 1);
 
   request.onupgradeneeded = function (e) {
     try {
@@ -11,19 +12,6 @@ let db;
         keyPath: 'key'
       });
       insertionsObjectStore.createIndex('updated', 'updated', {
-        unique: false
-      });
-    } catch (error) {
-      if (!(error.name === 'ConstraintError')) {
-        throw error;
-      }
-    }
-
-    try {
-      const deletionsObjectStore = e.target.result.createObjectStore('deletions', {
-        keyPath: 'key'
-      });
-      deletionsObjectStore.createIndex('updated', 'updated', {
         unique: false
       });
     } catch (error) {
@@ -69,29 +57,6 @@ const getReadOnlyInsertionsObjectStore = () => {
   return objectStore;
 };
 
-const getReadOnlyDeletionsObjectStore = () => {
-  if (typeof db === 'undefined') {
-    return null;
-  }
-
-  const transaction = db.transaction(['deletions'], 'readonly', {
-    durability: 'relaxed'
-  });
-  const objectStore = transaction.objectStore('deletions');
-
-  transaction.onabort = event => {
-    braidClient.logger.error('Read only deletions transaction was aborted');
-    console.error(event); // eslint-disable-line no-console
-  };
-
-  transaction.onerror = event => {
-    braidClient.logger.error('Error in read only deletions transaction');
-    console.error(event); // eslint-disable-line no-console
-  };
-
-  return objectStore;
-};
-
 const getReadWriteInsertionsObjectStore = () => {
   if (typeof db === 'undefined') {
     return null;
@@ -115,31 +80,7 @@ const getReadWriteInsertionsObjectStore = () => {
   return objectStore;
 };
 
-const getReadWriteDeletionsObjectStore = () => {
-  if (typeof db === 'undefined') {
-    return null;
-  }
-
-  const transaction = db.transaction(['deletions'], 'readwrite', {
-    durability: 'relaxed'
-  });
-  const objectStore = transaction.objectStore('deletions');
-
-  transaction.onabort = event => {
-    braidClient.logger.error('Read only deletions transaction was aborted');
-    console.error(event); // eslint-disable-line no-console
-  };
-
-  transaction.onerror = event => {
-    braidClient.logger.error('Error in read only deletions transaction');
-    console.error(event); // eslint-disable-line no-console
-  };
-
-  return objectStore;
-};
-
 const queuedInsertions = [];
-const queuedDeletions = [];
 let pendingStorageFlush = false;
 
 const dequeueStorageOperations = () => {
@@ -148,7 +89,7 @@ const dequeueStorageOperations = () => {
   }
 
   pendingStorageFlush = true;
-  requestAnimationFrame(() => {
+  requestIdleCallback(() => {
     pendingStorageFlush = false;
 
     _dequeueStorageOperations();
@@ -157,70 +98,44 @@ const dequeueStorageOperations = () => {
 
 const _dequeueStorageOperations = () => {
   // eslint-disable-line no-underscore-dangle
-  if (queuedDeletions.length > 0) {
-    const deletionsObjectStore = getReadWriteDeletionsObjectStore();
-
-    if (deletionsObjectStore !== null) {
-      while (queuedDeletions.length > 0) {
-        const [id, key] = queuedDeletions.shift();
-
-        if (queuedDeletions.length > 0) {
-          deletionsObjectStore.put({
-            key,
-            id,
-            updated: Date.now()
-          });
-          continue;
-        } // Only add a handler to the last item to accelerate the transaction
-
-
-        const request = deletionsObjectStore.put({
-          key,
-          id,
-          updated: Date.now()
-        });
-
-        request.onerror = event => {
-          braidClient.logger.error(`Unable to put deletion ${key} into indexedDB`);
-          console.error(event); // eslint-disable-line no-console
-        };
-      }
-    }
+  if (queuedInsertions.length === 0) {
+    return;
   }
 
-  if (queuedInsertions.length > 0) {
-    const insertionsObjectStore = getReadWriteInsertionsObjectStore();
+  const updated = Date.now();
+  const insertionsObjectStore = getReadWriteInsertionsObjectStore();
 
-    if (insertionsObjectStore !== null) {
-      while (queuedInsertions.length > 0) {
-        const [key, pair] = queuedInsertions.shift();
+  if (insertionsObjectStore !== null) {
+    while (queuedInsertions.length > 0) {
+      const [key, pair] = queuedInsertions.shift();
 
-        if (queuedInsertions.length > 0) {
-          insertionsObjectStore.put({
-            key,
-            pair,
-            updated: Date.now()
-          });
-          continue;
-        } // Only add a handler to the last item to accelerate the transaction
-
-
-        const request = insertionsObjectStore.put({
+      if (queuedInsertions.length > 0) {
+        insertionsObjectStore.put({
           key,
           pair,
-          updated: Date.now()
+          updated
         });
+        continue;
+      } // Only add a handler to the last item to accelerate the transaction
 
-        request.onerror = event => {
-          braidClient.logger.error(`Unable to put insertion ${key} into indexedDB`);
-          console.error(event); // eslint-disable-line no-console
-        };
-      }
+
+      const request = insertionsObjectStore.put({
+        key,
+        pair,
+        updated
+      });
+
+      request.onerror = event => {
+        braidClient.logger.error(`Unable to put insertion ${key} into indexedDB`);
+        console.error(event); // eslint-disable-line no-console
+      };
     }
+
+    insertionsObjectStore.transaction.commit();
   }
 };
 
-braidClient.on('process', ([insertions, deletions]) => {
+braidClient.on('process', ([insertions]) => {
   insertionLoop: // eslint-disable-line no-restricted-syntax,no-labels
   for (const item of insertions) {
     for (const prefix of flushIgnorePrefixes) {
@@ -229,18 +144,12 @@ braidClient.on('process', ([insertions, deletions]) => {
       }
     }
 
-    queuedInsertions.push(item);
-  }
-
-  deletionLoop: // eslint-disable-line no-restricted-syntax,no-labels
-  for (const item of deletions) {
-    for (const prefix of flushIgnorePrefixes) {
-      if (item[1].startsWith(prefix)) {
-        continue deletionLoop; // eslint-disable-line no-labels
-      }
+    if (insertionIdSet.has(item[1][0])) {
+      insertionIdSet.delete(item[1][0]);
+      return;
     }
 
-    queuedDeletions.push(item);
+    queuedInsertions.push(item);
   }
 
   dequeueStorageOperations();
@@ -275,95 +184,43 @@ braidClient.on('error', error => {
     console.error(event); // eslint-disable-line no-console
   };
 
-  const deletionTransaction = db.transaction(['deletions'], 'readwrite', {
-    durability: 'relaxed'
-  });
-  const deletionsObjectStore = deletionTransaction.objectStore('deletions');
-  const deletionRequest = deletionsObjectStore.delete(itemKey);
-
-  deletionRequest.onerror = function (event) {
-    braidClient.logger.error(`Unable to remove deletion ${itemKey} from indexedDB`);
-    console.error(event); // eslint-disable-line no-console
-  };
+  insertionTransaction.commit();
 });
 const queuedSubscriptions = [];
-let pendingSubscriptionsFlush = false;
 
 const dequeueSubscriptions = () => {
-  if (pendingSubscriptionsFlush) {
-    return;
-  }
-
-  pendingSubscriptionsFlush = true; // $FlowFixMe
-
-  queueMicrotask(() => {
-    pendingSubscriptionsFlush = false;
-
-    _dequeueSubscriptions();
-  });
-};
-
-const _dequeueSubscriptions = () => {
   // eslint-disable-line no-underscore-dangle
   const insertionsObjectStore = getReadOnlyInsertionsObjectStore();
-  const deletionsObjectStore = getReadOnlyDeletionsObjectStore();
 
   if (insertionsObjectStore === null) {
-    return null;
-  }
-
-  if (deletionsObjectStore === null) {
     return null;
   }
 
   while (queuedSubscriptions.length > 0) {
     const key = queuedSubscriptions.shift();
     const insertionRequest = insertionsObjectStore.get(key);
-    const insertionPromise = new Promise(resolve => {
-      insertionRequest.onsuccess = function () {
-        const item = insertionRequest.result;
 
-        if (typeof item !== 'undefined') {
-          resolve([[item.key, item.pair]]);
-        } else {
-          resolve([]);
-        }
-      };
+    insertionRequest.onsuccess = function () {
+      const item = insertionRequest.result;
 
-      insertionRequest.onerror = function (event) {
-        braidClient.logger.error(`Unable to get insertion ${key} from indexedDB`);
-        console.error(event); // eslint-disable-line no-console
+      if (typeof item !== 'undefined') {
+        processBraidData([[[item.key, item.pair]], []]);
+        insertionIdSet.add(item.pair[0]);
+      }
+    };
 
-        resolve([]);
-      };
-    });
-    const deletionRequest = deletionsObjectStore.get(key);
-    const deletionPromise = new Promise(resolve => {
-      deletionRequest.onsuccess = function () {
-        const item = deletionRequest.result;
-
-        if (typeof item !== 'undefined') {
-          resolve([[item.id, item.key]]);
-        } else {
-          resolve([]);
-        }
-      };
-
-      deletionRequest.onerror = function (event) {
-        braidClient.logger.error(`Unable to get deletion ${key} from indexedDB`);
-        console.error(event); // eslint-disable-line no-console
-
-        resolve([]);
-      };
-    });
-    Promise.all([insertionPromise, deletionPromise]).then(processBraidData);
+    insertionRequest.onerror = function (event) {
+      braidClient.logger.error(`Unable to get insertion ${key} from indexedDB`);
+      console.error(event); // eslint-disable-line no-console
+    };
   }
 
+  insertionsObjectStore.transaction.commit();
   return null;
 };
 
 braidClient.on('subscribe', key => {
-  if (typeof cachedValue(key) !== 'undefined') {
+  if (braidClient.data.has(key)) {
     return;
   }
 
@@ -373,66 +230,57 @@ braidClient.on('subscribe', key => {
 
 const getRecentlyUpdatedItems = () => {
   // eslint-disable-line no-underscore-dangle
-  const insertionsObjectStore = getReadOnlyInsertionsObjectStore();
-  const deletionsObjectStore = getReadOnlyDeletionsObjectStore(); // $FlowFixMe
+  const insertionsObjectStore = getReadOnlyInsertionsObjectStore(); // $FlowFixMe
 
   const updatedKeyRange = IDBKeyRange.lowerBound(Date.now() - 1000 * 60 * 60 * 24);
 
   if (insertionsObjectStore === null) {
-    return null;
-  }
-
-  if (deletionsObjectStore === null) {
-    return null;
+    return;
   }
 
   const insertionsUpdatedIndex = insertionsObjectStore.index('updated');
-  const insertionsPromise = new Promise(resolve => {
-    const insertions = [];
-    const request = insertionsUpdatedIndex.openCursor(updatedKeyRange);
+  const insertionsRequest = insertionsUpdatedIndex.getAll(updatedKeyRange);
 
-    request.onsuccess = event => {
-      const cursor = event.target.result;
+  insertionsRequest.onsuccess = event => {
+    const items = event.target.result;
+    const insertions = items.map(x => [x.key, x.pair]);
+    processBraidData([insertions, []]); // $FlowFixMe
 
-      if (cursor) {
-        insertions.push([cursor.value.key, cursor.value.pair]);
-        cursor.continue();
-      } else {
-        resolve(insertions);
-      }
-    };
+    requestIdleCallback(clearStaleItems);
+  };
 
-    request.onerror = function (event) {
-      braidClient.logger.error('Unable to get insertions within the last day from indexedDB');
-      console.error(event); // eslint-disable-line no-console
+  insertionsRequest.onerror = function (event) {
+    braidClient.logger.error('Unable to get insertions within the last day from indexedDB');
+    console.error(event); // eslint-disable-line no-console
+  };
 
-      resolve(insertions);
-    };
-  });
-  const deletionsUpdatedIndex = deletionsObjectStore.index('updated');
-  const deletionsPromise = new Promise(resolve => {
-    const deletions = [];
-    const request = deletionsUpdatedIndex.openCursor(updatedKeyRange);
+  insertionsObjectStore.transaction.commit();
+};
 
-    request.onsuccess = event => {
-      const cursor = event.target.result;
+const clearStaleItems = () => {
+  // eslint-disable-line no-underscore-dangle
+  const insertionsObjectStore = getReadOnlyInsertionsObjectStore(); // $FlowFixMe
 
-      if (cursor) {
-        deletions.push([cursor.value.id, cursor.value.key]);
-        cursor.continue();
-      } else {
-        resolve(deletions);
-      }
-    };
+  const updatedKeyRange = IDBKeyRange.upperBound(Date.now() - 1000 * 60 * 60 * 24 * 7);
 
-    request.onerror = function (event) {
-      braidClient.logger.error('Unable to get deletions within the last day from indexedDB');
-      console.error(event); // eslint-disable-line no-console
+  if (insertionsObjectStore === null) {
+    return;
+  }
 
-      resolve(deletions);
-    };
-  });
-  Promise.all([insertionsPromise, deletionsPromise]).then(processBraidData);
-  return null;
+  const insertionsUpdatedIndex = insertionsObjectStore.index('updated');
+  const insertionsRequest = insertionsUpdatedIndex.getAllKeys(updatedKeyRange);
+
+  insertionsRequest.onsuccess = event => {
+    for (const id of event.target.result) {
+      insertionsObjectStore.delete(id);
+    }
+  };
+
+  insertionsRequest.onerror = function (event) {
+    braidClient.logger.error('Unable to clear stale insertions  from indexedDB');
+    console.error(event); // eslint-disable-line no-console
+  };
+
+  insertionsObjectStore.transaction.commit();
 };
 //# sourceMappingURL=browser-cache.js.map
