@@ -160,6 +160,9 @@ const dequeueSubscriptions = () => { // eslint-disable-line no-underscore-dangle
     insertionRequest.onsuccess = function () {
       const item = insertionRequest.result;
       if (typeof item !== 'undefined') {
+        if (braidClient.data.has(item.key)) {
+          return;
+        }
         processBraidData([[[item.key, item.pair]], []]);
         insertionIdSet.add(item.pair[0]);
       }
@@ -191,9 +194,15 @@ const getRecentlyUpdatedItems = () => { // eslint-disable-line no-underscore-dan
   const insertionsUpdatedIndex = insertionsObjectStore.index('updated');
   const insertionsRequest = insertionsUpdatedIndex.getAll(updatedKeyRange);
   insertionsRequest.onsuccess = (event) => {
-    const items = event.target.result;
-    const insertions = items.map((x) => [x.key, x.pair]);
+    const insertions = [];
+    for (const { key, pair } of event.target.result) {
+      if (braidClient.data.has(key)) {
+        continue;
+      }
+      insertions.push([key, pair]);
+    }
     processBraidData([insertions, []]);
+    braidClient.logger.info(`Restored ${insertions.length} cached items to Braid`);
     // $FlowFixMe
     requestIdleCallback(clearStaleItems);
   };
