@@ -30,7 +30,7 @@ const insertionIdSet = new Set();
     braidClient.logger.info('Opened cache database');
     db = event.target.result;
     dequeueStorageOperations();
-    getRecentlyUpdatedItems();
+    requestIdleCallback(clearStaleItems);
   };
 })();
 
@@ -231,47 +231,6 @@ braidClient.on('subscribe', key => {
   queuedSubscriptions.push(key);
   dequeueSubscriptions();
 });
-
-const getRecentlyUpdatedItems = () => {
-  // eslint-disable-line no-underscore-dangle
-  const insertionsObjectStore = getReadOnlyInsertionsObjectStore(); // $FlowFixMe
-
-  const updatedKeyRange = IDBKeyRange.lowerBound(Date.now() - 1000 * 60 * 60 * 24);
-
-  if (insertionsObjectStore === null) {
-    return;
-  }
-
-  const insertionsUpdatedIndex = insertionsObjectStore.index('updated');
-  const insertionsRequest = insertionsUpdatedIndex.getAll(updatedKeyRange);
-
-  insertionsRequest.onsuccess = event => {
-    const insertions = [];
-
-    for (const {
-      key,
-      pair
-    } of event.target.result) {
-      if (braidClient.data.has(key)) {
-        continue;
-      }
-
-      insertions.push([key, pair]);
-    }
-
-    processBraidData([insertions, []]);
-    braidClient.logger.info(`Restored ${insertions.length} cached items to Braid`); // $FlowFixMe
-
-    requestIdleCallback(clearStaleItems);
-  };
-
-  insertionsRequest.onerror = function (event) {
-    braidClient.logger.error('Unable to get insertions within the last day from indexedDB');
-    console.error(event); // eslint-disable-line no-console
-  };
-
-  insertionsObjectStore.transaction.commit();
-};
 
 const clearStaleItems = () => {
   // eslint-disable-line no-underscore-dangle
