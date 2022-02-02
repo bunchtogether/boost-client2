@@ -39,7 +39,7 @@ coverage
 flow-typed
 flow
 
-*node_modules
+**/node_modules
 
 **/dist.js
 **/dist
