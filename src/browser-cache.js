@@ -185,7 +185,7 @@ braidClient.on('subscribe', (key) => {
 });
 
 const clearStaleItems = () => { // eslint-disable-line no-underscore-dangle
-  const insertionsObjectStore = getReadOnlyInsertionsObjectStore();
+  const insertionsObjectStore = getReadWriteInsertionsObjectStore();
   // $FlowFixMe
   const updatedKeyRange = IDBKeyRange.upperBound(Date.now() - 1000 * 60 * 60 * 24 * 7);
   if (insertionsObjectStore === null) {
