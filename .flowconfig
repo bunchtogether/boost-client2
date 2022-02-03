@@ -16,3 +16,4 @@ flow/
 [options]
 traces=3
 module.name_mapper='p-queue' ->'<PROJECT_ROOT>/node_modules/p-queue/dist/index.js'
+module.name_mapper='observed-remove/map' -> '<PROJECT_ROOT>/node_modules/observed-remove/dist/cjs/map.js'
