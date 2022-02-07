@@ -202,6 +202,5 @@ const clearStaleItems = () => { // eslint-disable-line no-underscore-dangle
     braidClient.logger.error('Unable to clear stale insertions  from indexedDB');
     console.error(event); // eslint-disable-line no-console
   };
-  insertionsObjectStore.transaction.commit();
 };
 
