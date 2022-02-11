@@ -18,6 +18,7 @@ export class BoostCatastrophicError extends Error {
 }
 export const flushIgnorePrefixes = new Set();
 export const braidClient = new Client();
+braidClient.data.setMaxListeners(100);
 let braidClientOpen = Date.now();
 braidClient.on('open', () => {
   braidClientOpen = Date.now();

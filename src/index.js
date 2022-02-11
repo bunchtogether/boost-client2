@@ -28,6 +28,8 @@ export const flushIgnorePrefixes:Set<string> = new Set();
 
 export const braidClient = new Client();
 
+braidClient.data.setMaxListeners(100);
+
 let braidClientOpen = Date.now();
 
 braidClient.on('open', () => {

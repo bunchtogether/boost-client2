@@ -43,17 +43,6 @@ const getReadOnlyInsertionsObjectStore = () => {
     durability: 'relaxed'
   });
   const objectStore = transaction.objectStore('insertions');
-
-  transaction.onabort = event => {
-    braidClient.logger.error('Read only insertions transaction was aborted');
-    console.error(event); // eslint-disable-line no-console
-  };
-
-  transaction.onerror = event => {
-    braidClient.logger.error('Error in read only insertions transaction');
-    console.error(event); // eslint-disable-line no-console
-  };
-
   return objectStore;
 };
 
@@ -66,17 +55,6 @@ const getReadWriteInsertionsObjectStore = () => {
     durability: 'relaxed'
   });
   const objectStore = transaction.objectStore('insertions');
-
-  transaction.onabort = event => {
-    braidClient.logger.error('Read only insertions transaction was aborted');
-    console.error(event); // eslint-disable-line no-console
-  };
-
-  transaction.onerror = event => {
-    braidClient.logger.error('Error in read only insertions transaction');
-    console.error(event); // eslint-disable-line no-console
-  };
-
   return objectStore;
 };
 
@@ -146,7 +124,7 @@ braidClient.on('process', ([insertions]) => {
 
     if (insertionIdSet.has(item[1][0])) {
       insertionIdSet.delete(item[1][0]);
-      return;
+      continue;
     }
 
     queuedInsertions.push(item);
@@ -186,9 +164,24 @@ braidClient.on('error', error => {
 
   insertionTransaction.commit();
 });
-const queuedSubscriptions = [];
+let dequeueRequested = false;
 
 const dequeueSubscriptions = () => {
+  if (dequeueRequested) {
+    return;
+  }
+
+  dequeueRequested = true;
+  queueMicrotask(() => {
+    dequeueRequested = false;
+
+    _dequeueSubscriptions();
+  });
+};
+
+const queuedSubscriptions = [];
+
+const _dequeueSubscriptions = () => {
   // eslint-disable-line no-underscore-dangle
   const insertionsObjectStore = getReadOnlyInsertionsObjectStore();
 
