@@ -1,7 +1,6 @@
 import { SubscribeError } from '@bunchtogether/braid-client';
 import { braidClient, flushIgnorePrefixes } from './index';
 let db;
-const insertionIdSet = new Set();
 
 (() => {
   const request = self.indexedDB.open('boost-03', 1);
@@ -29,7 +28,9 @@ const insertionIdSet = new Set();
   request.onsuccess = function (event) {
     braidClient.logger.info('Opened cache database');
     db = event.target.result;
-    dequeueStorageOperations();
+
+    _dequeueSubscriptions(true);
+
     requestIdleCallback(clearStaleItems);
   };
 })();
@@ -87,6 +88,11 @@ const _dequeueStorageOperations = () => {
     while (queuedInsertions.length > 0) {
       const [key, pair] = queuedInsertions.shift();
 
+      if (!braidClient.subscriptions.has(key)) {
+        // Do not update items loaded from cache without a subscription
+        continue;
+      }
+
       if (queuedInsertions.length > 0) {
         insertionsObjectStore.put({
           key,
@@ -120,11 +126,6 @@ braidClient.on('process', ([insertions]) => {
       if (item[0].startsWith(prefix)) {
         continue insertionLoop; // eslint-disable-line no-labels
       }
-    }
-
-    if (insertionIdSet.has(item[1][0])) {
-      insertionIdSet.delete(item[1][0]);
-      continue;
     }
 
     queuedInsertions.push(item);
@@ -175,19 +176,53 @@ const dequeueSubscriptions = () => {
   queueMicrotask(() => {
     dequeueRequested = false;
 
-    _dequeueSubscriptions();
+    _dequeueSubscriptions(false);
   });
 };
 
 const queuedSubscriptions = [];
+const sessionStart = Date.now();
 
-const _dequeueSubscriptions = () => {
+const _dequeueSubscriptions = getRecent => {
   // eslint-disable-line no-underscore-dangle
+  if (!getRecent && queuedSubscriptions.length === 0) {
+    return;
+  }
+
   const insertionsObjectStore = getReadOnlyInsertionsObjectStore();
 
   if (insertionsObjectStore === null) {
-    return null;
+    return;
   }
+
+  if (getRecent) {
+    const lastSessionStartString = localStorage.getItem('BOOST_CACHE_TIMESTAMP'); // $FlowFixMe
+
+    const request = typeof lastSessionStartString === 'string' ? insertionsObjectStore.index('updated').getAll(IDBKeyRange.lowerBound(parseInt(lastSessionStartString, 10) - 1000 * 60 * 60 * 2)) : insertionsObjectStore.getAll();
+
+    request.onsuccess = function () {
+      const items = request.result;
+      const insertions = [];
+
+      for (const {
+        key,
+        pair
+      } of items) {
+        insertions.push([key, pair]);
+      }
+
+      processBraidData([insertions, []]);
+      localStorage.setItem('BOOST_CACHE_TIMESTAMP', sessionStart.toString());
+      console.log('CACHED', insertions.length, Date.now() - start);
+    };
+
+    request.onerror = function (event) {
+      braidClient.logger.error('Unable to get recent insertions from indexedDB');
+      console.error(event); // eslint-disable-line no-console
+    };
+  }
+
+  const start = Date.now();
 
   while (queuedSubscriptions.length > 0) {
     const key = queuedSubscriptions.shift();
@@ -202,8 +237,9 @@ const _dequeueSubscriptions = () => {
         }
 
         processBraidData([[[item.key, item.pair]], []]);
-        insertionIdSet.add(item.pair[0]);
       }
+
+      console.log(Date.now() - start);
     };
 
     insertionRequest.onerror = function (event) {
@@ -213,7 +249,6 @@ const _dequeueSubscriptions = () => {
   }
 
   insertionsObjectStore.transaction.commit();
-  return null;
 };
 
 braidClient.on('subscribe', key => {
