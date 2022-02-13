@@ -167,7 +167,6 @@ const _dequeueSubscriptions = (getRecent:boolean) => { // eslint-disable-line no
       }
       processBraidData([insertions, []]);
       localStorage.setItem('BOOST_CACHE_TIMESTAMP', sessionStart.toString());
-      console.log('CACHED', insertions.length, Date.now() - start);
     };
     request.onerror = function (event) {
       braidClient.logger.error('Unable to get recent insertions from indexedDB');
@@ -175,7 +174,6 @@ const _dequeueSubscriptions = (getRecent:boolean) => { // eslint-disable-line no
     };
   }
 
-  const start = Date.now();
   while (queuedSubscriptions.length > 0) {
     const key = queuedSubscriptions.shift();
     const insertionRequest = insertionsObjectStore.get(key);
@@ -187,7 +185,6 @@ const _dequeueSubscriptions = (getRecent:boolean) => { // eslint-disable-line no
         }
         processBraidData([[[item.key, item.pair]], []]);
       }
-      console.log(Date.now() - start);
     };
     insertionRequest.onerror = function (event) {
       braidClient.logger.error(`Unable to get insertion ${key} from indexedDB`);

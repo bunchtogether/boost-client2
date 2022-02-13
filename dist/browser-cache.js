@@ -213,7 +213,6 @@ const _dequeueSubscriptions = getRecent => {
 
       processBraidData([insertions, []]);
       localStorage.setItem('BOOST_CACHE_TIMESTAMP', sessionStart.toString());
-      console.log('CACHED', insertions.length, Date.now() - start);
     };
 
     request.onerror = function (event) {
@@ -221,8 +220,6 @@ const _dequeueSubscriptions = getRecent => {
       console.error(event); // eslint-disable-line no-console
     };
   }
-
-  const start = Date.now();
 
   while (queuedSubscriptions.length > 0) {
     const key = queuedSubscriptions.shift();
@@ -238,8 +235,6 @@ const _dequeueSubscriptions = getRecent => {
 
         processBraidData([[[item.key, item.pair]], []]);
       }
-
-      console.log(Date.now() - start);
     };
 
     insertionRequest.onerror = function (event) {
