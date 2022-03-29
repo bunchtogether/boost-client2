@@ -22,7 +22,7 @@ const parse = (v:any) => {
   return undefined;
 };
 
-export default function useHasPermission(permission: string, sourceId?: string, targetId?: string) {
+export default function useHasPermission(sourceId?: string, targetId?: string, permission: string) {
   const name = getName(permission, sourceId, targetId);
   return useParseBraidValue(name, parse);
 }
